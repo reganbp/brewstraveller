@@ -22,7 +22,7 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
-app.include_router(auth.router, prefix="/auth")
+app.include_router(auth.router)
 app.include_router(breweries.router)
 app.include_router(checkins.router)
 app.include_router(stats.router)

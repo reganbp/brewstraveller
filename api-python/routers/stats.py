@@ -4,7 +4,7 @@ from database import get_db
 from models import UserStats
 from routers.auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/stats", tags=["Stats"])
 
 @router.get("", response_model=UserStats)
 async def get_stats(current_user: dict = Depends(get_current_user)):

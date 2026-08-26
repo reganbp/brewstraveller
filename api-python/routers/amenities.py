@@ -4,7 +4,7 @@ from database import get_db
 from models import AmenitySuggestion
 from utils.amenities import CANONICAL_AMENITIES, get_label_for_slug
 
-router = APIRouter()
+router = APIRouter(prefix="/amenities", tags=["Amenities"])
 
 @router.get("/suggest", response_model=List[AmenitySuggestion])
 async def suggest_amenities(q: Optional[str] = None):

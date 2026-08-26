@@ -8,7 +8,7 @@ from database import get_db
 from models import Brewery, BreweryCreate, BreweryDetailResponse, UserReportedAmenity
 from utils.amenities import get_label_for_slug
 
-router = APIRouter()
+router = APIRouter(prefix="/breweries", tags=["Breweries"])
 
 @router.get("", response_model=List[Brewery])
 async def get_breweries(

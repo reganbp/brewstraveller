@@ -6,7 +6,7 @@ from database import get_db
 from models import UserRegister, UserLogin, AuthResponse, User
 from utils.auth import hash_password, verify_password, create_access_token
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register(payload: UserRegister):

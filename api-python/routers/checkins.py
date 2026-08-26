@@ -5,7 +5,7 @@ from database import get_db
 from models import CheckIn, CheckInCreate
 from routers.auth import get_current_user
 
-router = APIRouter()
+router = APIRouter(prefix="/checkins", tags=["Check-Ins"])
 
 @router.get("", response_model=List[CheckIn])
 async def get_checkins(
