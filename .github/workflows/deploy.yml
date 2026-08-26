@@ -3,9 +3,6 @@
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'frontend-vue/**'
-      - '.github/workflows/deploy.yml'
 
 permissions:
   contents: read
@@ -13,41 +10,37 @@ permissions:
   id-token: write
 
 concurrency:
-  group: 'pages'
+  group: "pages"
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build-and-deploy:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
+      - name: Build Vue App
         run: |
           cd frontend-vue
-          npm ci
-
-      - name: Build static files
-        run: |
-          cd frontend-vue
+          npm install
           npm run build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        uses: actions/configure-pages@v5
 
-      - name: Upload artifact
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './frontend-vue/dist'
+          path: 'frontend-vue/dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
