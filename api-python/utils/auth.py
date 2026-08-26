@@ -2,7 +2,8 @@ import os
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
-from typing import Optional, Dict
+from typing import Dict
+from fastapi import HTTPException, status
 
 JWT_SECRET = os.getenv("JWT_SECRET", "brewstraveller_super_secret_key_123!")
 ALGORITHM = "HS256"
@@ -30,9 +31,12 @@ def create_access_token(user_id: str, email: str, role: str) -> str:
     encoded_jwt = jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_access_token(token: str) -> Optional[Dict]:
+def verify_access_token(token: str) -> Dict:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[ALGORITHM])
         return payload
-    except jwt.PyJWTError:
-        return None
+    except (jwt.PyJWTError, jwt.ExpiredSignatureError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )

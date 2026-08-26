@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from fastapi.responses import JSONResponse
 from database import get_db
 from models import UserRegister, UserLogin, AuthResponse, User
-from utils.auth import hash_password, verify_password, create_access_token
+from utils.auth import hash_password, verify_password, create_access_token, verify_access_token
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -88,9 +88,4 @@ security_scheme = HTTPBearer()
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security_scheme)):
     token = credentials.credentials
     payload = verify_access_token(token)
-    if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication token is expired or invalid."
-        )
     return payload  # contains: id, email, role
