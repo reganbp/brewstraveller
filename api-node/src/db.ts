@@ -1,47 +1,44 @@
-import { MongoClient, Db } from "mongodb";
-import dotenv from "dotenv";
+﻿import { MongoClient, Db, Collection } from 'mongodb';
+import dotenv from 'dotenv';
+import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
-const mongoUri = process.env.MONGO_URI || "mongodb://localhost:27017/brewstraveller";
-const dbName = mongoUri.split("/").pop()?.split("?")[0] || "brewstraveller";
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/brewstraveller';
+export const client = new MongoClient(MONGO_URI);
 
-let client: MongoClient | null = null;
-let db: Db | null = null;
+let dbInstance: Db | null = null;
 
 export async function connectDb(): Promise<Db> {
-  if (db) return db;
+  if (!dbInstance) {
+    await client.connect();
+    dbInstance = client.db();
 
-  console.log(`Connecting to MongoDB at: ${mongoUri.replace(/:([^@]+)@/, ":****@")}`);
-  client = new MongoClient(mongoUri);
-  await client.connect();
-  db = client.db(dbName);
-  
-  // Create indexes for optimal querying and constraint enforcement
-  await db.collection("breweries").createIndex({ id: 1 }, { unique: true });
-  await db.collection("breweries").createIndex({ google_place_id: 1 }, { unique: true });
-  await db.collection("breweries").createIndex({ name: "text", city: "text" });
-  
-  await db.collection("checkins").createIndex({ id: 1 }, { unique: true });
-  await db.collection("checkins").createIndex({ user_id: 1 });
-  await db.collection("checkins").createIndex({ brewery_id: 1 });
-  await db.collection("checkins").createIndex({ visited_at: -1 });
+    // Safe index creation
+    await dbInstance.collection('breweries').createIndex({ google_place_id: 1 }, { unique: true });
+    await dbInstance.collection('breweries').createIndex({ location: '2dsphere' });
+    await dbInstance.collection('checkins').createIndex({ user_id: 1, visited_at: -1 });
 
-  console.log("Connected successfully to MongoDB");
-  return db;
+    console.log('Connected to MongoDB Atlas');
+  }
+  return dbInstance;
 }
 
 export function getDb(): Db {
-  if (!db) {
-    throw new Error("Database not initialized. Call connectDb() first.");
+  if (!dbInstance) {
+    throw new Error('Database not initialized. Call connectDb first.');
   }
-  return db;
+  return dbInstance;
 }
 
-export function getBreweriesCollection() {
-  return getDb().collection("breweries");
+export function getBreweriesCollection(): Collection {
+  return getDb().collection('breweries');
 }
 
-export function getCheckInsCollection() {
-  return getDb().collection("checkins");
+export function getCheckinsCollection(): Collection {
+  return getDb().collection('checkins');
 }
+
+// Aliases for casing compatibility across route handlers
+export const getCheckInsCollection = getCheckinsCollection;
+export const getBreweryCollection = getBreweriesCollection;

@@ -1,74 +1,70 @@
-from pydantic import BaseModel, Field
-from typing import List, Literal, Optional, Tuple
+﻿from pydantic import BaseModel, Field
+from typing import List, Optional, Union
+from datetime import datetime
 
 class GeoJSONPoint(BaseModel):
-  type: Literal["Point"] = "Point"
-  coordinates: Tuple[float, float]  # [longitude, latitude]
+    type: str = "Point"
+    coordinates: List[float]
 
 class Brewery(BaseModel):
-  id: str
-  google_place_id: str
-  name: str
-  city: str
-  state: str
-  location: GeoJSONPoint
-  website: str
-  created_at: str
+    id: Optional[str] = None
+    google_place_id: str
+    name: str
+    city: str
+    state: str
+    location: GeoJSONPoint
+    website: Optional[str] = None
+    created_at: Optional[Union[datetime, str]] = None
 
 class BreweryCreate(BaseModel):
-  google_place_id: str
-  name: str
-  city: str
-  state: str = Field(..., min_length=2, max_length=2)
-  location: GeoJSONPoint
-  website: str
+    google_place_id: str
+    name: str
+    city: str
+    state: str
+    location: GeoJSONPoint
+    website: Optional[str] = None
 
 class UserReportedAmenity(BaseModel):
-  slug: str
-  label: str
-  count: int
+    slug: str
+    label: str
+    count: int
 
 class BreweryDetailResponse(Brewery):
-  amenities: List[UserReportedAmenity]
+    users_reported_amenities: List[UserReportedAmenity] = []
 
 class CheckIn(BaseModel):
-  id: str
-  user_id: str
-  brewery_id: str
-  visited_at: str
-  rating: float = Field(..., ge=1.0, le=5.0)
-  took_tour: bool
-  notes: str
-  distance_miles: float = Field(..., ge=0.0)
-  transportation_mode: Literal["drive", "flight", "walk", "transit"]
-  trip_name: Optional[str] = None
-  amenities_observed: List[str]
+    id: Optional[str] = None
+    user_id: str
+    brewery_id: str
+    visited_at: Union[datetime, str]
+    rating: float
+    took_tour: bool
+    notes: Optional[str] = None
+    distance_miles: float
+    transportation_mode: str
+    trip_name: Optional[str] = None
+    amenities_observed: List[str] = []
 
 class CheckInCreate(BaseModel):
-  user_id: str
-  brewery_id: str
-  visited_at: str
-  rating: float = Field(..., ge=1.0, le=5.0)
-  took_tour: bool
-  notes: str
-  distance_miles: float = Field(..., ge=0.0)
-  transportation_mode: Literal["drive", "flight", "walk", "transit"]
-  trip_name: Optional[str] = None
-  amenities_observed: List[str]
+    user_id: str
+    brewery_id: str
+    visited_at: Union[datetime, str]
+    rating: float
+    took_tour: bool
+    notes: Optional[str] = None
+    distance_miles: float
+    transportation_mode: str
+    trip_name: Optional[str] = None
+    amenities_observed: List[str] = []
 
 class AmenitySuggestion(BaseModel):
-  slug: str
-  label: str
-  usage_count: int
+    slug: str
+    label: str
+    usage_count: int
 
 class UserStats(BaseModel):
-  total_breweries: int
-  total_miles: float
-  total_tours: int
-  states_visited_count: int
-  states_visited: List[str]
-  state_list: List[str]
-
-class Error(BaseModel):
-  code: str
-  message: str
+    total_breweries: int
+    total_miles: float
+    total_tours: int
+    states_visited_count: int
+    states_visited: List[str]
