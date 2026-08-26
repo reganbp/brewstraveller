@@ -1,0 +1,538 @@
+openapi: 3.0.3
+info:
+  title: BrewsTraveller API
+  version: 1.0.0
+  description: >
+    A dual-backend portfolio API for tracking brewery check-ins, travel miles, 
+    and aggregated amenities. Designed for developers building with Node.js and FastAPI.
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns status "ok", API runtime name (Node vs FastAPI), and server time.
+      responses:
+        '200':
+          description: Health check response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - runtime
+                  - server_time
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  runtime:
+                    type: string
+                    enum: [Node.js, FastAPI]
+                    example: "Node.js"
+                  server_time:
+                    type: string
+                    format: date-time
+                    example: "2026-08-26T14:30:00Z"
+
+  /breweries:
+    get:
+      summary: List/search cached breweries
+      description: Retrieve and search breweries cached locally.
+      parameters:
+        - name: q
+          in: query
+          description: Search term matching brewery name or city
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          description: Two-letter US state code filter
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of breweries to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 20
+      responses:
+        '200':
+          description: Successfully retrieved list of breweries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Brewery'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Create or update a brewery
+      description: Create or update a cached brewery record.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - google_place_id
+                - name
+                - city
+                - state
+                - location
+                - website
+              properties:
+                google_place_id:
+                  type: string
+                  example: "ChIJiQv69m_3j4ARb7SgZ8_H1gE"
+                name:
+                  type: string
+                  example: "Russian River Brewing Company"
+                city:
+                  type: string
+                  example: "Santa Rosa"
+                state:
+                  type: string
+                  example: "CA"
+                location:
+                  $ref: '#/components/schemas/GeoJSONPoint'
+                website:
+                  type: string
+                  format: uri
+                  example: "https://www.russianriverbrewing.com"
+      responses:
+        '201':
+          description: Brewery successfully created or updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brewery'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /breweries/{id}:
+    get:
+      summary: Get detailed brewery info
+      description: Get detailed brewery info, including an aggregated list of user-reported amenities.
+      parameters:
+        - name: id
+          in: path
+          description: The unique identifier of the brewery
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Brewery details with aggregated user-reported amenities
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Brewery'
+                  - type: object
+                    required:
+                      - amenities
+                    properties:
+                      amenities:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserReportedAmenity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /checkins:
+    get:
+      summary: Get user check-in history
+      description: Retrieve user check-in history sorted by visited_at descending.
+      parameters:
+        - name: user_id
+          in: query
+          description: Filter check-ins by user ID
+          required: false
+          schema:
+            type: string
+        - name: trip_name
+          in: query
+          description: Filter check-ins by trip name
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of check-ins to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            default: 50
+      responses:
+        '200':
+          description: User check-in history successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckIn'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Log a new check-in
+      description: Log a new check-in, specifying the brewery, travel details, and observed amenities.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - brewery_id
+                - visited_at
+                - rating
+                - took_tour
+                - notes
+                - distance_miles
+                - transportation_mode
+                - amenities_observed
+              properties:
+                user_id:
+                  type: string
+                  example: "user_123456"
+                brewery_id:
+                  type: string
+                  format: uuid
+                  example: "a3f5b7c2-9e8d-4a3b-9c5e-7f6d5c4b3a21"
+                visited_at:
+                  type: string
+                  format: date-time
+                  example: "2026-08-26T12:00:00Z"
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                  example: 4.5
+                took_tour:
+                  type: boolean
+                  example: true
+                notes:
+                  type: string
+                  example: "Tried the Pliny the Elder. Outstanding!"
+                distance_miles:
+                  type: number
+                  minimum: 0
+                  example: 15.2
+                transportation_mode:
+                  type: string
+                  enum: [drive, flight, walk, transit]
+                  example: "drive"
+                trip_name:
+                  type: string
+                  example: "Sonoma Beer Run"
+                amenities_observed:
+                  type: array
+                  items:
+                    type: string
+                  example: ["dog_friendly", "outdoor_patio"]
+      responses:
+        '201':
+          description: Check-in logged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckIn'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+          description: Brewery not found
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /stats:
+    get:
+      summary: Get user check-in statistics
+      description: Return aggregated user metrics for portfolio passport stamps.
+      parameters:
+        - name: user_id
+          in: query
+          description: The unique identifier of the user
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Aggregated user stats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserStats'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /amenities/suggest:
+    get:
+      summary: Suggest amenities
+      description: Autocomplete endpoint matching canonical amenities.
+      parameters:
+        - name: q
+          in: query
+          description: Autocomplete search query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Canonical amenity suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AmenitySuggestion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Brewery:
+      type: object
+      required:
+        - id
+        - google_place_id
+        - name
+        - city
+        - state
+        - location
+        - website
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a3f5b7c2-9e8d-4a3b-9c5e-7f6d5c4b3a21"
+        google_place_id:
+          type: string
+          example: "ChIJiQv69m_3j4ARb7SgZ8_H1gE"
+        name:
+          type: string
+          example: "Russian River Brewing Company"
+        city:
+          type: string
+          example: "Santa Rosa"
+        state:
+          type: string
+          example: "CA"
+        location:
+          $ref: '#/components/schemas/GeoJSONPoint'
+        website:
+          type: string
+          format: uri
+          example: "https://www.russianriverbrewing.com"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-08-26T10:00:00Z"
+
+    CheckIn:
+      type: object
+      required:
+        - id
+        - user_id
+        - brewery_id
+        - visited_at
+        - rating
+        - took_tour
+        - notes
+        - distance_miles
+        - transportation_mode
+        - amenities_observed
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "11111111-2222-3333-4444-555555555555"
+        user_id:
+          type: string
+          example: "user_123456"
+        brewery_id:
+          type: string
+          format: uuid
+          example: "a3f5b7c2-9e8d-4a3b-9c5e-7f6d5c4b3a21"
+        visited_at:
+          type: string
+          format: date-time
+          example: "2026-08-26T12:00:00Z"
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+          example: 4.5
+        took_tour:
+          type: boolean
+          example: true
+        notes:
+          type: string
+          example: "Tried the Pliny the Elder. Outstanding!"
+        distance_miles:
+          type: number
+          minimum: 0
+          example: 15.2
+        transportation_mode:
+          type: string
+          enum: [drive, flight, walk, transit]
+          example: "drive"
+        trip_name:
+          type: string
+          nullable: true
+          example: "Sonoma Beer Run"
+        amenities_observed:
+          type: array
+          items:
+            type: string
+          example: ["dog_friendly", "outdoor_patio"]
+
+    GeoJSONPoint:
+      type: object
+      required:
+        - type
+        - coordinates
+      properties:
+        type:
+          type: string
+          enum: [Point]
+          example: "Point"
+        coordinates:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+          description: "Longitude, Latitude coordinates"
+          example: [-122.7144, 38.4411]
+
+    AmenitySuggestion:
+      type: object
+      required:
+        - slug
+        - label
+        - usage_count
+      properties:
+        slug:
+          type: string
+          example: "dog_friendly"
+        label:
+          type: string
+          example: "Dog Friendly"
+        usage_count:
+          type: integer
+          minimum: 0
+          example: 42
+
+    UserReportedAmenity:
+      type: object
+      required:
+        - slug
+        - label
+        - count
+      properties:
+        slug:
+          type: string
+          example: "dog_friendly"
+        label:
+          type: string
+          example: "Dog Friendly"
+        count:
+          type: integer
+          minimum: 0
+          example: 5
+
+    UserStats:
+      type: object
+      required:
+        - total_breweries
+        - total_miles
+        - total_tours
+        - states_visited_count
+        - states_visited
+        - state_list
+      properties:
+        total_breweries:
+          type: integer
+          minimum: 0
+          example: 12
+        total_miles:
+          type: number
+          minimum: 0
+          example: 345.8
+        total_tours:
+          type: integer
+          minimum: 0
+          example: 3
+        states_visited_count:
+          type: integer
+          minimum: 0
+          example: 2
+        states_visited:
+          type: array
+          items:
+            type: string
+          example: ["CA", "OR"]
+        state_list:
+          type: array
+          items:
+            type: string
+          example: ["CA", "OR"]
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: "BAD_REQUEST"
+        message:
+          type: string
+          example: "Invalid parameter value."
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or body.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: An unexpected internal server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
