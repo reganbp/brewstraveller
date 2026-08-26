@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm transition-opacity">
-    <div class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-950 transition-all duration-300 flex flex-col gap-5">
+    <div class="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-950 transition-all duration-300 flex flex-col gap-5">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
         <h3 class="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
@@ -16,7 +16,7 @@
       </div>
 
       <!-- Errors -->
-      <p v-if="errorMsg" class="text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg border border-rose-200/50 dark:border-rose-900/30">
+      <p v-if="errorMsg" class="text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-950/20 p-2.5 rounded-lg border border-rose-200/50 dark:border-rose-900/30 animate-pulse">
         ⚠ {{ errorMsg }}
       </p>
 
@@ -25,7 +25,7 @@
         <!-- Full Name (Only for Register) -->
         <div v-if="isRegister" class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Full Name
+            Full Name <span class="text-rose-500">*</span>
           </label>
           <input
             v-model="formData.full_name"
@@ -38,7 +38,7 @@
         <!-- Email -->
         <div class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Email Address
+            Email Address <span class="text-rose-500">*</span>
           </label>
           <input
             v-model="formData.email"
@@ -52,7 +52,7 @@
         <!-- Password -->
         <div class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Password
+            Password <span class="text-rose-500">*</span>
           </label>
           <input
             v-model="formData.password"
@@ -66,7 +66,7 @@
         <!-- Confirm Password (Only for Register) -->
         <div v-if="isRegister" class="space-y-1.5">
           <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-            Confirm Password
+            Confirm Password <span class="text-rose-500">*</span>
           </label>
           <input
             v-model="formData.confirmPassword"
@@ -129,7 +129,21 @@ const formData = reactive({
 async function handleSubmit() {
   errorMsg.value = null;
 
-  // Confirm passwords match
+  // Basic client-side validation
+  if (!formData.email.trim()) {
+    errorMsg.value = "Email Address is required.";
+    return;
+  }
+  if (!formData.password.trim()) {
+    errorMsg.value = "Password is required.";
+    return;
+  }
+  if (isRegister.value && !formData.full_name.trim()) {
+    errorMsg.value = "Full Name is required.";
+    return;
+  }
+
+  // Confirm passwords match during registration
   if (isRegister.value && formData.password !== formData.confirmPassword) {
     errorMsg.value = "Passwords do not match.";
     return;
@@ -139,9 +153,9 @@ async function handleSubmit() {
 
   try {
     if (isRegister.value) {
-      await register(formData.email, formData.password, formData.full_name);
+      await register(formData.email.trim(), formData.password, formData.full_name.trim());
     } else {
-      await login(formData.email, formData.password);
+      await login(formData.email.trim(), formData.password);
     }
     emit('success');
   } catch (err: any) {
