@@ -60,6 +60,9 @@
         <!-- Stats Overview Cards -->
         <StatsOverview :stats="stats" />
 
+        <!-- Advanced Filter Controls -->
+        <FilterBar :breweries="breweries" @filter-change="handleFilterChange" />
+
         <!-- Split Panel: Maps/Venues and Timeline Feed -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <!-- Left/Center Map Visualizer Section (2 cols) -->
@@ -69,7 +72,7 @@
                 🗺️ Location Explorer
               </h2>
             </div>
-            <BreweryMap :breweries="breweries" />
+            <BreweryMap :breweries="filteredBreweries" />
           </div>
 
           <!-- Right Timeline Section (1 col) -->
@@ -101,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { Plus, AlertCircle, RefreshCw } from 'lucide-vue-next';
 import api, { activeBackend, apiBaseUrl } from '@/services/api';
 import type { Brewery, CheckIn, UserStats } from '@/types';
@@ -112,6 +115,7 @@ import StatsOverview from '@/components/StatsOverview.vue';
 import CheckInList from '@/components/CheckInList.vue';
 import BreweryMap from '@/components/BreweryMap.vue';
 import CheckInForm from '@/components/CheckInForm.vue';
+import FilterBar from '@/components/FilterBar.vue';
 
 // Constants
 const USER_ID = 'default_passport_user';
@@ -130,6 +134,63 @@ const stats = ref<UserStats>({
   states_visited_count: 0,
   states_visited: [],
   state_list: []
+});
+
+// Filtering state
+const activeFilters = ref({
+  search: '',
+  state: '',
+  rating: 0,
+  amenities: [] as string[]
+});
+
+function handleFilterChange(newFilters: typeof activeFilters.value) {
+  activeFilters.value = newFilters;
+}
+
+// Compute filtered list of breweries based on active search, state, rating, and amenity criteria
+const filteredBreweries = computed(() => {
+  return breweries.value.filter((b) => {
+    // 1. Search term match (name, city, state)
+    if (activeFilters.value.search) {
+      const sLower = activeFilters.value.search.toLowerCase();
+      const matchesSearch =
+        b.name.toLowerCase().includes(sLower) ||
+        b.city.toLowerCase().includes(sLower) ||
+        b.state.toLowerCase().includes(sLower);
+      if (!matchesSearch) return false;
+    }
+
+    // 2. US State match
+    if (activeFilters.value.state) {
+      if (b.state.toUpperCase() !== activeFilters.value.state.toUpperCase()) {
+        return false;
+      }
+    }
+
+    // 3. Minimum rating match
+    if (activeFilters.value.rating > 0) {
+      const breweryCheckins = checkIns.value.filter((c) => c.brewery_id === b.id);
+      if (breweryCheckins.length === 0) return false;
+      const avg = breweryCheckins.reduce((sum, c) => sum + c.rating, 0) / breweryCheckins.length;
+      if (avg < activeFilters.value.rating) return false;
+    }
+
+    // 4. Observed amenities match
+    if (activeFilters.value.amenities.length > 0) {
+      const breweryCheckins = checkIns.value.filter((c) => c.brewery_id === b.id);
+      const observed = new Set<string>();
+      breweryCheckins.forEach((c) => {
+        if (c.amenities_observed) {
+          c.amenities_observed.forEach((a) => observed.add(a));
+        }
+      });
+      const matchesAll = activeFilters.value.amenities.every((a) => observed.has(a));
+      if (!matchesAll) return false;
+    }
+
+    return true;
+  });
 });
 
 async function fetchData() {
