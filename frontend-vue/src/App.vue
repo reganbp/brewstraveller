@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col font-sans">
     <!-- Navigation Bar -->
-    <Navbar />
+    <Navbar @auth-success="fetchData" />
 
     <!-- Main Content Area -->
     <main class="flex-1 mx-auto max-w-7xl w-full px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -17,11 +17,18 @@
           </p>
         </div>
         <button
+          v-if="isLoggedIn"
           @click="showCheckInModal = true"
           class="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 px-5 py-3 text-xs font-bold text-white shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-300 w-full sm:w-auto"
         >
           <Plus class="h-4.5 w-4.5" /> Log New Visit
         </button>
+        <span
+          v-else
+          class="inline-flex items-center justify-center text-xs font-extrabold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 px-5 py-3 rounded-xl cursor-default"
+        >
+          🔑 Sign In to Stamp Passport
+        </span>
       </div>
 
       <!-- Loading State Overlay -->
@@ -57,19 +64,35 @@
 
       <!-- Main Dashboard Grid -->
       <div v-else class="space-y-8 animate-fade-in">
-        <!-- Stats Overview Cards -->
-        <StatsOverview :stats="stats" />
+        <!-- Dashboard Authenticated blocks -->
+        <div v-if="isLoggedIn" class="space-y-8">
+          <!-- Stats Overview Cards -->
+          <StatsOverview :stats="stats" />
 
-        <!-- Advanced Filter Controls -->
+          <!-- Trip Planner & Route Visualizer -->
+          <TripPlanner
+            :check-ins="checkIns"
+            :breweries="breweries"
+            :selected-trip-name="selectedTripName"
+            @select-trip="handleSelectTrip"
+          />
+        </div>
+
+        <!-- Locked Authentication Prompt overlay -->
+        <div v-else class="rounded-2xl border border-slate-200 bg-white p-8 dark:border-slate-850 dark:bg-slate-900/40 text-center space-y-3 max-w-xl mx-auto shadow-sm">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <Lock class="h-5 w-5" />
+          </div>
+          <div>
+            <h3 class="text-sm font-extrabold text-slate-950 dark:text-white">Passport Vault Locked</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+              Personalized metrics, maps, journey timelines, and trip logs require profile authorization. Please sign in or create an account to activate your passport.
+            </p>
+          </div>
+        </div>
+
+        <!-- Advanced Filter Controls (Always Public) -->
         <FilterBar :breweries="breweries" @filter-change="handleFilterChange" />
-
-        <!-- Trip Planner & Route Visualizer -->
-        <TripPlanner
-          :check-ins="checkIns"
-          :breweries="breweries"
-          :selected-trip-name="selectedTripName"
-          @select-trip="handleSelectTrip"
-        />
 
         <!-- Split Panel: Maps/Venues and Timeline Feed -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
@@ -87,14 +110,17 @@
             />
           </div>
 
-          <!-- Right Timeline Section (1 col) -->
+          <!-- Right Timeline Section (1 col - Authenticated view) -->
           <div class="xl:col-span-1 space-y-6">
             <div class="flex items-center justify-between">
               <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 📜 Visited Venues
               </h2>
             </div>
-            <CheckInList :checkIns="checkIns" :breweries="breweries" />
+            <CheckInList v-if="isLoggedIn" :checkIns="checkIns" :breweries="breweries" />
+            <div v-else class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-850 dark:bg-slate-900/40 text-center py-12 text-xs text-slate-400">
+              🔒 Sign In to view recent visits
+            </div>
           </div>
         </div>
       </div>
@@ -117,9 +143,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
-import { Plus, AlertCircle, RefreshCw } from 'lucide-vue-next';
+import { Plus, AlertCircle, RefreshCw, Lock } from 'lucide-vue-next';
 import api, { activeBackend, apiBaseUrl } from '@/services/api';
 import type { Brewery, CheckIn, UserStats } from '@/types';
+import { useAuth } from '@/composables/useAuth';
 
 // Components
 import Navbar from '@/components/Navbar.vue';
@@ -130,8 +157,8 @@ import CheckInForm from '@/components/CheckInForm.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import TripPlanner from '@/components/TripPlanner.vue';
 
-// Constants
-const USER_ID = 'default_passport_user';
+// Auth State
+const { isLoggedIn } = useAuth();
 
 // State
 const loading = ref(true);
@@ -216,21 +243,31 @@ async function fetchData() {
   error.value = false;
 
   try {
-    // 1. Fetch Breweries
+    // 1. Fetch Breweries (Public Endpoint)
     const breweriesRes = await api.get('/breweries');
     breweries.value = breweriesRes.data;
 
-    // 2. Fetch Check-ins
-    const checkInsRes = await api.get('/checkins', {
-      params: { user_id: USER_ID }
-    });
-    checkIns.value = checkInsRes.data;
+    // Fetch private details only if authenticated
+    if (isLoggedIn.value) {
+      // 2. Fetch Check-ins
+      const checkInsRes = await api.get('/checkins');
+      checkIns.value = checkInsRes.data;
 
-    // 3. Fetch Stats
-    const statsRes = await api.get('/stats', {
-      params: { user_id: USER_ID }
-    });
-    stats.value = statsRes.data;
+      // 3. Fetch Stats
+      const statsRes = await api.get('/stats');
+      stats.value = statsRes.data;
+    } else {
+      // Reset authenticated collections
+      checkIns.value = [];
+      stats.value = {
+        total_breweries: 0,
+        total_miles: 0,
+        total_tours: 0,
+        states_visited_count: 0,
+        states_visited: [],
+        state_list: []
+      };
+    }
   } catch (err) {
     console.error('Failed to sync passport data:', err);
     error.value = true;

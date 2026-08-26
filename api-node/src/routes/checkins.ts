@@ -1,13 +1,14 @@
-import { Router, Request, Response } from "express";
+import { Router, Response } from "express";
 import { getCheckInsCollection, getBreweriesCollection } from "../db";
 import { randomUUID } from "crypto";
+import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
-// GET /checkins - Get user check-in history sorted by visited_at descending
-router.get("/", async (req: Request, res: Response) => {
+// GET /checkins - Get user check-in history sorted by visited_at descending (Authenticated and scoped to user)
+router.get("/", authMiddleware as any, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user_id = req.query.user_id as string | undefined;
+    const user_id = req.user!.id;
     const trip_name = req.query.trip_name as string | undefined;
     const limitParam = req.query.limit as string | undefined;
 
@@ -23,10 +24,7 @@ router.get("/", async (req: Request, res: Response) => {
       limit = parsed;
     }
 
-    const filter: any = {};
-    if (user_id) {
-      filter.user_id = user_id;
-    }
+    const filter: any = { user_id };
     if (trip_name) {
       filter.trip_name = { $regex: trip_name, $options: "i" };
     }
@@ -47,11 +45,10 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-// POST /checkins - Log a new check-in
-router.post("/", async (req: Request, res: Response) => {
+// POST /checkins - Log a new check-in (Authenticated and set to user_id)
+router.post("/", authMiddleware as any, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const {
-      user_id,
       brewery_id,
       visited_at,
       rating,
@@ -63,10 +60,9 @@ router.post("/", async (req: Request, res: Response) => {
       amenities_observed
     } = req.body;
 
+    const user_id = req.user!.id;
+
     // Body Validation
-    if (!user_id || typeof user_id !== "string") {
-      return res.status(400).json({ code: "BAD_REQUEST", message: "user_id is required." });
-    }
     if (!brewery_id || typeof brewery_id !== "string") {
       return res.status(400).json({ code: "BAD_REQUEST", message: "brewery_id is required." });
     }

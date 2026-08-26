@@ -18,6 +18,8 @@ export async function connectDb(): Promise<Db> {
     await dbInstance.collection('breweries').createIndex({ google_place_id: 1 }, { unique: true });
     await dbInstance.collection('breweries').createIndex({ location: '2dsphere' });
     await dbInstance.collection('checkins').createIndex({ user_id: 1, visited_at: -1 });
+    await dbInstance.collection('users').createIndex({ email: 1 }, { unique: true });
+    await dbInstance.collection('users').createIndex({ id: 1 }, { unique: true });
 
     console.log('Connected to MongoDB Atlas');
   }
@@ -37,6 +39,10 @@ export function getBreweriesCollection(): Collection {
 
 export function getCheckinsCollection(): Collection {
   return getDb().collection('checkins');
+}
+
+export function getUsersCollection(): Collection {
+  return getDb().collection('users');
 }
 
 // Aliases for casing compatibility across route handlers

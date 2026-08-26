@@ -1,23 +1,22 @@
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import JSONResponse
+from fastapi import APIRouter, HTTPException, Query, status, Depends
 from database import get_db
 from models import CheckIn, CheckInCreate
+from routers.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("", response_model=List[CheckIn])
 async def get_checkins(
-    user_id: Optional[str] = None,
     trip_name: Optional[str] = None,
-    limit: int = Query(50, ge=1)
+    limit: int = Query(50, ge=1),
+    current_user: dict = Depends(get_current_user)
 ):
     db = get_db()
-    filter_query = {}
+    user_id = current_user["id"]
+    filter_query = {"user_id": user_id}
 
-    if user_id:
-        filter_query["user_id"] = user_id
     if trip_name:
         filter_query["trip_name"] = {"$regex": trip_name, "$options": "i"}
 
@@ -26,8 +25,12 @@ async def get_checkins(
     return checkins
 
 @router.post("", response_model=CheckIn, status_code=status.HTTP_201_CREATED)
-async def create_checkin(payload: CheckInCreate):
+async def create_checkin(
+    payload: CheckInCreate,
+    current_user: dict = Depends(get_current_user)
+):
     db = get_db()
+    user_id = current_user["id"]
 
     # Verify the brewery exists
     brewery = await db.breweries.find_one({"id": payload.brewery_id})
@@ -55,6 +58,7 @@ async def create_checkin(payload: CheckInCreate):
 
     new_checkin = payload.dict()
     new_checkin["id"] = str(uuid.uuid4())
+    new_checkin["user_id"] = user_id  # set authenticated user
     new_checkin["visited_at"] = formatted_visited_at
 
     await db.checkins.insert_one(new_checkin)

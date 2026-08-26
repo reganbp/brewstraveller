@@ -68,3 +68,25 @@ class UserStats(BaseModel):
     total_tours: int
     states_visited_count: int
     states_visited: List[str]
+    state_list: List[str]
+
+class UserRegister(BaseModel):
+    email: str
+    password: str
+    full_name: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class User(BaseModel):
+    id: str
+    email: str
+    full_name: str
+    role: str = "user"
+    created_at: str
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "Bearer"
+    user: User

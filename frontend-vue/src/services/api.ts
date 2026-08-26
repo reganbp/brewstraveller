@@ -29,6 +29,13 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   (config as any).metadata = { startTime: new Date().getTime() };
+  
+  const token = localStorage.getItem('bt_token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  
   return config;
 });
 

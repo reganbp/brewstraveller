@@ -1,18 +1,14 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Depends, status
 from database import get_db
 from models import UserStats
+from routers.auth import get_current_user
 
 router = APIRouter()
 
 @router.get("", response_model=UserStats)
-async def get_stats(user_id: Optional[str] = None):
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The 'user_id' query parameter is required."
-        )
-
+async def get_stats(current_user: dict = Depends(get_current_user)):
+    user_id = current_user["id"]
     db = get_db()
 
     pipeline = [

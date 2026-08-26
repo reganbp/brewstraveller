@@ -8,6 +8,7 @@ import checkinsRouter from './routes/checkins';
 import statsRouter from './routes/stats';
 import amenitiesRouter from './routes/amenities';
 import healthRouter from './routes/health';
+import authRouter from './routes/auth';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -34,6 +35,7 @@ app.use(cors({
 app.use(express.json());
 
 app.use('/health', healthRouter);
+app.use('/auth', authRouter);
 app.use('/breweries', breweriesRouter);
 app.use('/checkins', checkinsRouter);
 app.use('/stats', statsRouter);

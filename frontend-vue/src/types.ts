@@ -49,3 +49,11 @@ export interface AmenitySuggestion {
   label: string;
   usage_count: number;
 }
+
+export interface User {
+  id: string;
+  email: string;
+  full_name: string;
+  role: 'user' | 'admin';
+  created_at: string;
+}

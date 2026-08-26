@@ -6,6 +6,82 @@ info:
     A dual-backend portfolio API for tracking brewery check-ins, travel miles, 
     and aggregated amenities. Designed for developers building with Node.js and FastAPI.
 paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      description: Create a new user profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - full_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+                full_name:
+                  type: string
+                  example: "John Doe"
+      responses:
+        '201':
+          description: User registered successfully and logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /auth/login:
+    post:
+      summary: Log in a user
+      description: Authenticate user credentials and return a JWT access token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        '200':
+          description: User authenticated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
   /health:
     get:
       summary: Health check
@@ -504,6 +580,51 @@ components:
             type: string
           example: ["CA", "OR"]
 
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - full_name
+        - role
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        full_name:
+          type: string
+          example: "John Doe"
+        role:
+          type: string
+          enum: [user, admin]
+          example: "user"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-08-26T10:00:00Z"
+
+    AuthResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - user
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "Bearer"
+        user:
+          $ref: '#/components/schemas/User'
+
     Error:
       type: object
       required:
@@ -536,3 +657,9 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
