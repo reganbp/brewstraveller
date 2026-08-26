@@ -8,12 +8,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
 import L from 'leaflet';
-import type { Brewery } from '@/types';
+import type { Brewery, CheckIn } from '@/types';
 
 // Props
 const props = defineProps<{
   breweries: Brewery[];
+  checkIns: CheckIn[];
   selectedBreweryId?: string;
+  selectedTripName?: string | null;
 }>();
 
 // Emits
@@ -24,6 +26,7 @@ const emit = defineEmits<{
 const mapContainer = ref<HTMLDivElement | null>(null);
 let map: L.Map | null = null;
 let markersLayer: L.LayerGroup | null = null;
+let activePolyline: L.Polyline | null = null;
 
 // Fix default Leaflet marker icon asset path issues in Vite/Webpack bundling
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -59,6 +62,11 @@ onMounted(() => {
   if (props.selectedBreweryId) {
     centerOnBrewery(props.selectedBreweryId, true);
   }
+
+  // Draw trip route if active
+  if (props.selectedTripName) {
+    drawTripRoute();
+  }
 });
 
 onUnmounted(() => {
@@ -71,6 +79,7 @@ onUnmounted(() => {
 // Update markers whenever breweries array prop updates
 watch(() => props.breweries, () => {
   updateMarkers();
+  drawTripRoute();
 }, { deep: true });
 
 // Center/pan map whenever selectedBreweryId updates
@@ -79,6 +88,16 @@ watch(() => props.selectedBreweryId, (newId) => {
     centerOnBrewery(newId);
   }
 });
+
+// Watch trip selection to redraw the route polyline path
+watch(() => props.selectedTripName, () => {
+  drawTripRoute();
+});
+
+// Watch checkins array to update route on changes
+watch(() => props.checkIns, () => {
+  drawTripRoute();
+}, { deep: true });
 
 function updateMarkers() {
   if (!map || !markersLayer) return;
@@ -131,8 +150,8 @@ function updateMarkers() {
     markersLayer!.addLayer(marker);
   });
 
-  // Fit map bounds to contain all markers if multiple are present
-  if (bounds.length > 0 && !props.selectedBreweryId) {
+  // Fit map bounds to contain all markers if multiple are present and no trip is selected
+  if (bounds.length > 0 && !props.selectedBreweryId && !props.selectedTripName) {
     map.fitBounds(bounds, { padding: [40, 40] });
   }
 }
@@ -165,6 +184,57 @@ function centerOnBrewery(id: string, immediate = false) {
       }
     });
   }
+}
+
+// Draw polyline connecting visited breweries in chronological order
+function drawTripRoute() {
+  if (!map) return;
+
+  // Clear existing polyline
+  if (activePolyline) {
+    activePolyline.remove();
+    activePolyline = null;
+  }
+
+  const tripName = props.selectedTripName;
+  if (!tripName) return;
+
+  // Filter check-ins by trip name, sort chronologically ascending
+  const tripCheckins = props.checkIns
+    .filter((c) => c.trip_name && c.trip_name.trim().toLowerCase() === tripName.trim().toLowerCase())
+    .sort((a, b) => new Date(a.visited_at).getTime() - new Date(b.visited_at).getTime());
+
+  if (tripCheckins.length < 1) return;
+
+  const latLngs: L.LatLngTuple[] = [];
+
+  tripCheckins.forEach((c) => {
+    const brew = props.breweries.find((b) => b.id === c.brewery_id);
+    const coordinates = brew?.location?.coordinates;
+    if (coordinates && coordinates.length === 2) {
+      const [lng, lat] = coordinates;
+      latLngs.push([lat, lng]);
+    }
+  });
+
+  if (latLngs.length < 2) return; // Need at least two points to form a connecting polyline route
+
+  // Draw route polyline with traveler-style dashed configuration
+  activePolyline = L.polyline(latLngs, {
+    color: '#f59e0b', // Amber gold traveler tone
+    weight: 4,
+    opacity: 0.85,
+    dashArray: '8, 8', // Travel map dashed pattern
+    lineJoin: 'round',
+    lineCap: 'round'
+  }).addTo(map);
+
+  // Automatically adjust bounds to encapsulate all brewery coordinates on this route
+  map.fitBounds(activePolyline.getBounds(), {
+    padding: [50, 50],
+    animate: true,
+    duration: 1.5
+  });
 }
 </script>
 

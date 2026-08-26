@@ -48,7 +48,9 @@
           <div class="h-64 sm:h-72 w-full rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-800 bg-slate-50">
             <InteractiveMap
               :breweries="breweries"
+              :check-ins="checkIns"
               :selected-brewery-id="selectedBrewery?.id"
+              :selected-trip-name="selectedTripName"
               @select-brewery="selectBrewery"
             />
           </div>
@@ -144,11 +146,13 @@
 import { ref, watch } from 'vue';
 import { Navigation, MapPin, ExternalLink, Award, Compass } from 'lucide-vue-next';
 import api from '@/services/api';
-import type { Brewery } from '@/types';
+import type { Brewery, CheckIn } from '@/types';
 import InteractiveMap from './InteractiveMap.vue';
 
 const props = defineProps<{
   breweries: Brewery[];
+  checkIns: CheckIn[];
+  selectedTripName?: string | null;
 }>();
 
 const selectedBrewery = ref<Brewery | null>(null);

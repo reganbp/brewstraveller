@@ -63,6 +63,14 @@
         <!-- Advanced Filter Controls -->
         <FilterBar :breweries="breweries" @filter-change="handleFilterChange" />
 
+        <!-- Trip Planner & Route Visualizer -->
+        <TripPlanner
+          :check-ins="checkIns"
+          :breweries="breweries"
+          :selected-trip-name="selectedTripName"
+          @select-trip="handleSelectTrip"
+        />
+
         <!-- Split Panel: Maps/Venues and Timeline Feed -->
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
           <!-- Left/Center Map Visualizer Section (2 cols) -->
@@ -72,7 +80,11 @@
                 🗺️ Location Explorer
               </h2>
             </div>
-            <BreweryMap :breweries="filteredBreweries" />
+            <BreweryMap
+              :breweries="filteredBreweries"
+              :check-ins="checkIns"
+              :selected-trip-name="selectedTripName"
+            />
           </div>
 
           <!-- Right Timeline Section (1 col) -->
@@ -116,6 +128,7 @@ import CheckInList from '@/components/CheckInList.vue';
 import BreweryMap from '@/components/BreweryMap.vue';
 import CheckInForm from '@/components/CheckInForm.vue';
 import FilterBar from '@/components/FilterBar.vue';
+import TripPlanner from '@/components/TripPlanner.vue';
 
 // Constants
 const USER_ID = 'default_passport_user';
@@ -124,6 +137,7 @@ const USER_ID = 'default_passport_user';
 const loading = ref(true);
 const error = ref(false);
 const showCheckInModal = ref(false);
+const selectedTripName = ref<string | null>(null);
 
 const breweries = ref<Brewery[]>([]);
 const checkIns = ref<CheckIn[]>([]);
@@ -146,6 +160,10 @@ const activeFilters = ref({
 
 function handleFilterChange(newFilters: typeof activeFilters.value) {
   activeFilters.value = newFilters;
+}
+
+function handleSelectTrip(tripName: string | null) {
+  selectedTripName.value = tripName;
 }
 
 // Compute filtered list of breweries based on active search, state, rating, and amenity criteria
