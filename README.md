@@ -1,50 +1,144 @@
-﻿# BrewsTraveller 🍻
+# 🍻 BrewsTraveller
 
-An architecture-focused, polyglot travel passport application designed to showcase interchangeability, contract-first API design, and MongoDB aggregation pipelines across distinct backend runtimes.
-
-![Vue 3](https://img.shields.io/badge/Frontend-Vue%203%20%7C%20TypeScript-4FC08D)
-![Node.js](https://img.shields.io/badge/Backend%201-Node.js%20%7C%20Express-339933)
-![Python](https://img.shields.io/badge/Backend%202-Python%20%7C%20FastAPI-3776AB)
-![MongoDB](https://img.shields.io/badge/Database-MongoDB%20Atlas-47A248)
+A full-stack, passport-style brewery tracking web application engineered with **dual-backend parity**. BrewsTraveller allows users to seamlessly switch runtime backends on the fly between **Node.js (Express)** and **Python (FastAPI)** while sharing a single **MongoDB Atlas** database and **Vue 3** frontend.
 
 ---
 
-## 🏛 System Architecture
+## 🚀 Live Deployments
 
-The application decouples presentation from data services using an identical **OpenAPI 3.0 specification**. A single SPA instance seamlessly toggles between two isolated backend runtimes in real time:
+* **Frontend (Vue 3 SPA):** [https://reganbp.github.io/brewstraveller/](https://reganbp.github.io/brewstraveller/)
+* **Node.js API (Render):** `https://brewstraveller-node-api.onrender.com`
+* **Python API (Render):** `https://brewstraveller-python-api.onrender.com`
+* **Interactive OpenAPI Specs:** [FastAPI Swagger Docs](https://brewstraveller-python-api.onrender.com/docs)
 
-- **Frontend:** Vue 3 (Composition API, TypeScript, Vite, Tailwind CSS). Features live backend ping benchmarks and reactive state persistence.
-- **Node.js API (/api-node):** Express + TypeScript using the official native MongoDB driver.
-- **Python API (/api-python):** FastAPI + Async Motor driver with Pydantic V2 schema validation.
-- **Database:** Shared MongoDB Atlas cluster utilizing GeoJSON geospatial indexing and dynamic multi-stage aggregation pipelines.
+---
 
-## 💡 Principal Software Engineering Highlights
+## 🏗️ Architecture & Stack Overview
 
-* **Contract-First Interchangeability:** Neither backend relies on custom client logic. The Vue frontend switches endpoints on the fly while computing round-trip HTTP latency metrics.
-* **Crowd-Sourced Amenity Aggregations:** Amenities are recorded at the check-in level rather than hardcoded to brewery profiles. Both APIs execute $unwind and $group MongoDB aggregation pipelines to calculate dynamic "User-Reported" tags.
-* **Type Safety Across Ecosystems:** Strict typing contracts maintained via TypeScript interfaces in Node and Pydantic models in FastAPI.
-* **Legacy Prototype Reference:** Prior single-stack React iteration preserved for historical reference [here](https://github.com/reganbp/brewstraveller-react-legacy).
+```
+                        ┌────────────────────────────────────────┐
+                        │        Vue 3 + TypeScript SPA         │
+                        │       (Hosted on GitHub Pages)         │
+                        └───────────────────┬────────────────────┘
+                                            │
+                                  Runtime Switcher Header
+                                            │
+                     ┌──────────────────────┴──────────────────────┐
+                     ▼                                             ▼
+       ┌───────────────────────────┐                 ┌───────────────────────────┐
+       │   Node.js / Express API   │                 │   Python / FastAPI API    │
+       │    (Hosted on Render)     │                 │    (Hosted on Render)     │
+       └─────────────┬─────────────┘                 └─────────────┬─────────────┘
+                     │                                             │
+                     └──────────────────────┬──────────────────────┘
+                                            │
+                                            ▼
+                                ┌───────────────────────┐
+                                │  MongoDB Atlas Cloud  │
+                                └───────────────────────┘
+```
 
-## 🚀 Running Locally
+### **Frontend**
+* **Framework:** Vue 3 (Composition API, `<script setup>`)
+* **Build Tool & Language:** Vite, TypeScript
+* **HTTP Client:** Axios with custom timing interceptors for live latency metrics
+* **CI/CD:** GitHub Actions deploying to GitHub Pages
 
-`ash
-# 1. Clone repository
+### **Backends (Dual Parity)**
+* **Node.js Engine:** Express, TypeScript, MongoDB Native Driver (`mongodb`)
+* **Python Engine:** FastAPI, Pydantic v2, PyMongo
+* **Shared DB Indexing:** 2D Sphere GeoJSON spatial indexing, unique constraint indexes on Google Place IDs
+
+---
+
+## ✨ Key Features
+
+* **Dual-Backend Switcher:** Toggle between Node.js and Python backends in real-time from the top navbar without state loss or page reloads.
+* **Passport Analytics:** Tracks total unique breweries visited, travel distance in miles, guided tours taken, and states explored.
+* **Location Explorer:** Displays registered brewery locations with GeoJSON coordinates and crowd-sourced amenity lists.
+* **Check-In Log:** Complete visit records detailing ratings, notes, transportation mode, trip naming, and observed venue amenities.
+* **Live Latency Benchmarking:** Built-in HTTP request timing badge comparing response times across runtimes.
+
+---
+
+## 🛠️ Local Development Setup
+
+### **Prerequisites**
+* Node.js v20+
+* Python 3.10+
+* MongoDB Atlas Cluster (or local MongoDB instance)
+
+### **1. Repository Setup**
+```bash
 git clone [https://github.com/reganbp/brewstraveller.git](https://github.com/reganbp/brewstraveller.git)
 cd brewstraveller
+```
 
-# 2. Run Node.js API (Port 8080)
+### **2. Environment Configuration**
+Create a `.env` file in both `api-node` and `api-python`:
+
+**`api-node/.env`**
+```env
+PORT=5000
+MONGO_URI=your_mongodb_atlas_connection_string
+CORS_ORIGIN=http://localhost:5173
+```
+
+**`api-python/.env`**
+```env
+PORT=8000
+MONGO_URI=your_mongodb_atlas_connection_string
+CORS_ORIGIN=http://localhost:5173
+```
+
+### **3. Running the App**
+
+#### **Database Seeding**
+```bash
 cd api-node
 npm install
-npm run dev
+npx ts-node src/seed.ts
+```
 
-# 3. Run Python FastAPI (Port 8000)
-cd ../api-python
+#### **Node.js Backend (Port 5000)**
+```bash
+cd api-node
+npm run dev
+```
+
+#### **Python Backend (Port 8000)**
+```bash
+cd api-python
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+# Activate virtual environment (.venv\Scripts\Activate.ps1 on Windows)
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
+```
 
-# 4. Run Vue 3 Frontend
-cd ../frontend-vue
+#### **Vue 3 Frontend (Port 5173)**
+```bash
+cd frontend-vue
 npm install
 npm run dev
+```
+
+---
+
+## 📜 API Endpoints
+
+Both backends implement the identical REST contract:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/health` | Server status and database health check |
+| `GET` | `/breweries` | List all registered breweries |
+| `POST` | `/breweries` | Register a new brewery venue |
+| `GET` | `/checkins` | Fetch all user passport check-in logs |
+| `POST` | `/checkins` | Log a new visit with ratings and amenities |
+| `GET` | `/stats` | Aggregated user metrics (miles, tours, states) |
+| `GET` | `/amenities` | Aggregated crowd-sourced amenity breakdown |
+
+---
+
+## 📄 License
+Distributed under the MIT License.
