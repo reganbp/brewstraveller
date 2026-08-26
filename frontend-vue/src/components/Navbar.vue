@@ -95,7 +95,7 @@
 
     <!-- Toggleable Authentication modal overlay -->
     <AuthModal
-      v-if="showAuthModal"
+      :is-open="showAuthModal"
       @close="showAuthModal = false"
       @success="handleAuthSuccess"
     />
