@@ -1,4 +1,4 @@
-﻿name: Deploy Vue SPA to GitHub Pages
+name: Deploy Vue SPA to GitHub Pages
 
 on:
   push:
