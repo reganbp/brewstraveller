@@ -1,59 +1,33 @@
-import axios from 'axios';
-import { ref, watch } from 'vue';
+﻿import axios from 'axios';
 
 export type BackendType = 'node' | 'python';
 
-const DEFAULT_BACKENDS: Record<BackendType, string> = {
-  node: 'http://localhost:5000',
-  python: 'http://localhost:8000'
+const IS_PROD = import.meta.env.PROD;
+
+export const BACKEND_URLS: Record<BackendType, string> = {
+  node: IS_PROD 
+    ? 'https://brewstraveller-node-api.onrender.com' 
+    : 'http://localhost:5000',
+  python: IS_PROD 
+    ? 'https://brewstraveller-python-api.onrender.com' 
+    : 'http://localhost:8000',
 };
 
-const storedBackend = localStorage.getItem('bt_backend') as BackendType | null;
-const initialBackend: BackendType = storedBackend || 'node';
+let activeBackend: BackendType = (localStorage.getItem('active_backend') as BackendType) || 'node';
 
-export const activeBackend = ref<BackendType>(initialBackend);
-export const apiBaseUrl = ref<string>(localStorage.getItem('bt_api_url') || DEFAULT_BACKENDS[initialBackend]);
-export const latency = ref<number | null>(null);
-
-watch(activeBackend, (newVal) => {
-  localStorage.setItem('bt_backend', newVal);
-  apiBaseUrl.value = DEFAULT_BACKENDS[newVal];
-  localStorage.setItem('bt_api_url', DEFAULT_BACKENDS[newVal]);
-});
-
-const api = axios.create();
-
-// Dynamically set active backend URL before every request
-api.interceptors.request.use((config) => {
-  config.baseURL = apiBaseUrl.value;
-  config.metadata = { startTime: Date.now() };
-  return config;
-});
-
-api.interceptors.response.use(
-  (response) => {
-    const startTime = response.config.metadata?.startTime;
-    if (startTime) {
-      latency.value = Date.now() - startTime;
-    }
-    return response;
+export const api = axios.create({
+  baseURL: BACKEND_URLS[activeBackend],
+  headers: {
+    'Content-Type': 'application/json',
   },
-  (error) => {
-    const startTime = error.config?.metadata?.startTime;
-    if (startTime) {
-      latency.value = Date.now() - startTime;
-    }
-    return Promise.reject(error);
-  }
-);
+});
 
-// Extend AxiosRequestConfig so TS compiler allows custom metadata properties
-declare module 'axios' {
-  export interface AxiosRequestConfig {
-    metadata?: {
-      startTime: number;
-    };
-  }
+export function setBackend(backend: BackendType): void {
+  activeBackend = backend;
+  localStorage.setItem('active_backend', backend);
+  api.defaults.baseURL = BACKEND_URLS[backend];
 }
 
-export default api;
+export function getActiveBackend(): BackendType {
+  return activeBackend;
+}
