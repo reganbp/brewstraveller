@@ -107,6 +107,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Beer, Zap, Sun, Moon, LogIn, LogOut, User as UserIcon } from 'lucide-vue-next';
 import api, { activeBackend, latency, setBackend } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
+import { useTheme } from '@/composables/useTheme';
 import AuthModal from './AuthModal.vue';
 
 // Emits
@@ -114,21 +115,10 @@ const emit = defineEmits<{
   (e: 'auth-success'): void;
 }>();
 
-const isDark = ref(true);
 const showAuthModal = ref(false);
 
 const { isLoggedIn, user, logout } = useAuth();
-
-function toggleTheme() {
-  isDark.value = !isDark.value;
-  if (isDark.value) {
-    document.documentElement.classList.add('dark');
-    localStorage.setItem('theme', 'dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-    localStorage.setItem('theme', 'light');
-  }
-}
+const { isDark, toggleTheme } = useTheme();
 
 // Compute colors based on response latency
 const latencyColor = computed(() => {
@@ -163,16 +153,6 @@ function handleAuthSuccess() {
 }
 
 onMounted(() => {
-  // Sync theme
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light') {
-    isDark.value = false;
-    document.documentElement.classList.remove('dark');
-  } else {
-    isDark.value = true;
-    document.documentElement.classList.add('dark');
-  }
-
   // Set up ping interval
   pingBackend();
   pingInterval = window.setInterval(pingBackend, 10000);
