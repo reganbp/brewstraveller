@@ -57,3 +57,11 @@ export interface User {
   role: 'user' | 'admin';
   created_at: string;
 }
+
+export interface Trip {
+  id: string;
+  user_id: string;
+  name: string;
+  planned_brewery_ids: string[];
+  created_at: string;
+}

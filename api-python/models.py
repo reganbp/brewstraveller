@@ -90,3 +90,14 @@ class AuthResponse(BaseModel):
     access_token: str
     token_type: str = "Bearer"
     user: User
+
+class Trip(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    planned_brewery_ids: List[str] = []
+    created_at: str
+
+class TripCreate(BaseModel):
+    name: str
+    planned_brewery_ids: List[str] = []

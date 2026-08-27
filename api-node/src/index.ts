@@ -9,6 +9,7 @@ import statsRouter from './routes/stats';
 import amenitiesRouter from './routes/amenities';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
+import tripsRouter from './routes/trips';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -38,6 +39,7 @@ app.use('/health', healthRouter);
 app.use('/auth', authRouter);
 app.use('/breweries', breweriesRouter);
 app.use('/checkins', checkinsRouter);
+app.use('/trips', tripsRouter);
 app.use('/stats', statsRouter);
 app.use('/amenities', amenitiesRouter);
 

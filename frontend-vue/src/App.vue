@@ -75,6 +75,8 @@
             :breweries="breweries"
             :selected-trip-name="selectedTripName"
             @select-trip="handleSelectTrip"
+            @trip-created="fetchData"
+            @add-stop="handlePlanStop"
           />
         </div>
 
@@ -117,7 +119,7 @@
                 📜 Visited Venues
               </h2>
             </div>
-            <CheckInList v-if="isLoggedIn" :checkIns="checkIns" :breweries="breweries" />
+            <CheckInList v-if="isLoggedIn" :checkIns="checkIns" :breweries="breweries" @success="fetchData" />
             <div v-else class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-850 dark:bg-slate-900/40 text-center py-12 text-xs text-slate-400">
               🔒 Sign In to view recent visits
             </div>
@@ -130,7 +132,8 @@
     <CheckInForm
       v-if="showCheckInModal"
       :breweries="breweries"
-      @close="showCheckInModal = false"
+      :initial-trip-name="selectedInitialTripName"
+      @close="handleCheckInClose"
       @success="handleCheckInSuccess"
     />
 
@@ -145,7 +148,7 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { Plus, AlertCircle, RefreshCw, Lock } from 'lucide-vue-next';
 import api, { activeBackend, apiBaseUrl } from '@/services/api';
-import type { Brewery, CheckIn, UserStats } from '@/types';
+import type { Brewery, CheckIn, UserStats, Trip } from '@/types';
 import { useAuth } from '@/composables/useAuth';
 
 // Components
@@ -168,6 +171,7 @@ const selectedTripName = ref<string | null>(null);
 
 const breweries = ref<Brewery[]>([]);
 const checkIns = ref<CheckIn[]>([]);
+const trips = ref<Trip[]>([]);
 const stats = ref<UserStats>({
   total_breweries: 0,
   total_miles: 0,
@@ -185,12 +189,24 @@ const activeFilters = ref({
   amenities: [] as string[]
 });
 
+const selectedInitialTripName = ref<string | null>(null);
+
 function handleFilterChange(newFilters: typeof activeFilters.value) {
   activeFilters.value = newFilters;
 }
 
 function handleSelectTrip(tripName: string | null) {
   selectedTripName.value = tripName;
+}
+
+function handlePlanStop(tripName: string) {
+  selectedInitialTripName.value = tripName;
+  showCheckInModal.value = true;
+}
+
+function handleCheckInClose() {
+  selectedInitialTripName.value = null;
+  showCheckInModal.value = false;
 }
 
 // Compute filtered list of breweries based on active search, state, rating, and amenity criteria
@@ -256,9 +272,14 @@ async function fetchData() {
       // 3. Fetch Stats
       const statsRes = await api.get('/stats');
       stats.value = statsRes.data;
+
+      // 4. Fetch Trips (Decoupled Itineraries)
+      const tripsRes = await api.get('/trips');
+      trips.value = tripsRes.data;
     } else {
       // Reset authenticated collections
       checkIns.value = [];
+      trips.value = [];
       stats.value = {
         total_breweries: 0,
         total_miles: 0,

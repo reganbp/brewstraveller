@@ -356,8 +356,10 @@ import { CalendarDays, X, Star } from 'lucide-vue-next';
 import api from '@/services/api';
 import type { Brewery, AmenitySuggestion } from '@/types';
 
-defineProps<{
+const props = defineProps<{
   breweries: Brewery[];
+  initialTripName?: string | null;
+  initialBreweryId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -433,6 +435,12 @@ function handleOutsideClick(e: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('mousedown', handleOutsideClick);
+  if (props.initialTripName) {
+    formData.trip_name = props.initialTripName;
+  }
+  if (props.initialBreweryId) {
+    formData.brewery_id = props.initialBreweryId;
+  }
 });
 
 onUnmounted(() => {
