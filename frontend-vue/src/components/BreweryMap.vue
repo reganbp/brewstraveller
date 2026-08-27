@@ -1,8 +1,9 @@
 <template>
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Brewery Directory (Left panel, 1 col) -->
-    <div class="lg:col-span-1 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-300 flex flex-col h-[550px]">
-      <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800 flex items-center justify-between">
+  <!-- Responsive flex direction: stacked on mobile, row on desktop -->
+  <div class="flex flex-col lg:flex-row gap-6">
+    <!-- Brewery Directory (Sidebar, stacked on mobile, 80 width on desktop) -->
+    <div class="w-full lg:w-80 flex-shrink-0 rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-300 flex flex-col h-[400px] lg:h-[600px]">
+      <div class="border-b border-slate-200 px-4 py-3.5 dark:border-slate-800 flex items-center justify-between">
         <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <Navigation class="h-4 w-4 text-amber-500" /> Brewery Directory
         </h3>
@@ -18,7 +19,7 @@
           :key="brewery.id"
           @click="selectBrewery(brewery)"
           :class="[
-            'w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all flex flex-col gap-1',
+            'w-full text-left p-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all flex flex-col gap-1 min-h-[44px]',
             selectedBrewery?.id === brewery.id ? 'bg-amber-500/5 border-l-4 border-amber-500 dark:bg-amber-500/10' : ''
           ]"
         >
@@ -39,13 +40,13 @@
       </div>
     </div>
 
-    <!-- Interactive Location Visualizer & Amenities (Right panels, 2 cols) -->
-    <div class="lg:col-span-2 flex flex-col gap-6">
-      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-300 flex-1 flex flex-col min-h-[550px]">
+    <!-- Interactive Location Visualizer & Amenities (Right panels, takes full remaining width) -->
+    <div class="flex-1 flex flex-col gap-6">
+      <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 transition-colors duration-300 flex-1 flex flex-col justify-between">
         <div v-if="selectedBrewery" class="space-y-6 flex-1 flex flex-col justify-between">
           
-          <!-- Live Interactive Leaflet Map -->
-          <div class="h-64 sm:h-72 w-full rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-800 bg-slate-50">
+          <!-- Live Interactive Leaflet Map with responsive height constraints per requirements -->
+          <div class="h-[320px] sm:h-[420px] lg:h-[600px] w-full rounded-2xl overflow-hidden relative border border-slate-200 dark:border-slate-800 bg-slate-50">
             <InteractiveMap
               :breweries="breweries"
               :check-ins="checkIns"
@@ -71,16 +72,16 @@
                 v-if="selectedBrewery.website"
                 :href="selectedBrewery.website"
                 target="_blank"
-                class="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-bold mt-2 hover:underline"
+                class="inline-flex items-center gap-1.5 h-11 text-xs text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300 font-bold mt-2 hover:underline"
               >
                 Visit Website <ExternalLink class="h-3 w-3" />
               </a>
             </div>
 
             <!-- Virtual Coordinate Plot Box -->
-            <div class="w-full sm:w-48 px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center font-mono">
-              <span class="text-[10px] text-slate-400 uppercase font-extrabold">Geospatial Point</span>
-              <span class="text-[11px] text-slate-800 dark:text-slate-300 mt-0.5 font-bold">
+            <div class="w-full sm:w-48 px-4 py-2.5 h-11 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col items-center justify-center font-mono flex-shrink-0">
+              <span class="text-[9px] text-slate-400 uppercase font-extrabold">Geospatial Point</span>
+              <span class="text-[10px] sm:text-[11px] text-slate-800 dark:text-slate-300 mt-0.5 font-bold">
                 {{ selectedBrewery.location.coordinates[1].toFixed(4) }}°N, {{ selectedBrewery.location.coordinates[0].toFixed(4) }}°W
               </span>
             </div>
