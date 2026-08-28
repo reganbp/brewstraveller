@@ -175,7 +175,9 @@ async function selectBrewery(brewery: Brewery) {
     const res = await api.get(`/breweries/${brewery.id}`);
     detailedBrewery.value = res.data;
   } catch (err) {
-    console.error('Failed to load crowd-sourced amenities:', err);
+    console.warn(`Failed to retrieve details for brewery ID: ${brewery.id}. Resetting selection state.`, err);
+    selectedBrewery.value = null;
+    detailedBrewery.value = null;
   } finally {
     loadingAmenities.value = false;
   }

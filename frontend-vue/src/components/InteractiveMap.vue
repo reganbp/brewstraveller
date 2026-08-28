@@ -116,16 +116,16 @@ function updateMarkers() {
     const [lng, lat] = coordinates;
     bounds.push([lat, lng]);
 
-    // Create custom popup element dynamically to attach event listeners cleanly
+    // Create custom popup element dynamically to attach event listeners cleanly and hardcode light-mode styling
     const popupDiv = document.createElement('div');
-    popupDiv.className = 'p-1 font-sans text-slate-800';
+    popupDiv.className = 'p-1 font-sans text-slate-900';
     
     popupDiv.innerHTML = `
-      <h4 class="font-extrabold text-sm mb-0.5">${brewery.name}</h4>
-      <p class="text-xs text-slate-500 mb-2">${brewery.city}, ${brewery.state}</p>
+      <h4 class="font-extrabold text-sm mb-0.5" style="color: #0f172a !important; font-weight: 700;">${brewery.name}</h4>
+      <p class="text-xs mb-2" style="color: #475569 !important;">${brewery.city}, ${brewery.state}</p>
       <div class="flex flex-col gap-1">
         ${brewery.website ? `
-          <a href="${brewery.website}" target="_blank" class="text-[11px] text-amber-600 hover:text-amber-700 font-semibold hover:underline inline-flex items-center gap-0.5">
+          <a href="${brewery.website}" target="_blank" class="text-[11px] font-semibold hover:underline inline-flex items-center gap-0.5" style="color: #2563eb !important;">
             Visit Website &rarr;
           </a>
         ` : ''}
@@ -133,7 +133,8 @@ function updateMarkers() {
     `;
 
     const selectBtn = document.createElement('button');
-    selectBtn.className = 'mt-2.5 w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:hover:bg-slate-200 dark:text-slate-950 font-bold py-1.5 px-3 rounded text-[10px] uppercase tracking-wider transition-colors';
+    selectBtn.className = 'mt-2.5 w-full font-bold py-1.5 px-3 rounded text-[10px] uppercase tracking-wider transition-colors';
+    selectBtn.style.cssText = 'background-color: #0f172a !important; color: #ffffff !important; border: none; cursor: pointer;';
     selectBtn.innerText = 'View Details';
     selectBtn.onclick = () => {
       emit('select-brewery', brewery);
@@ -239,24 +240,16 @@ function drawTripRoute() {
 </script>
 
 <style>
-/* Leaflet custom popup typography fix to match Tailwind styles */
-.leaflet-popup-content-wrapper {
-  border-radius: 0.75rem !important;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
-  border: 1px solid #e2e8f0;
+/* Hardcode custom Leaflet popup styles explicitly to light mode */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+  border: 1px solid #e2e8f0 !important;
 }
-.dark .leaflet-popup-content-wrapper {
-  background-color: #020617 !important;
-  color: #f8fafc !important;
-  border: 1px solid #1e293b;
-}
-.leaflet-popup-tip {
-  border: 1px solid #e2e8f0;
-}
-.dark .leaflet-popup-tip {
-  background-color: #020617 !important;
-}
-.dark .leaflet-popup-content {
-  color: #f8fafc !important;
+
+/* Ensure child text remains legible in light-mode popup context */
+.leaflet-popup-content {
+  color: #0f172a !important;
 }
 </style>
