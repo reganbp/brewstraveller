@@ -95,9 +95,11 @@ class Trip(BaseModel):
     id: str
     user_id: str
     name: str
+    description: Optional[str] = None
     planned_brewery_ids: List[str] = []
     created_at: str
 
 class TripCreate(BaseModel):
     name: str
+    description: Optional[str] = None
     planned_brewery_ids: List[str] = []

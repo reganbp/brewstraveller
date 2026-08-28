@@ -27,7 +27,7 @@ router.get('/', authMiddleware as any, async (req: AuthenticatedRequest, res: Re
 router.post('/', authMiddleware as any, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user_id = req.user!.id;
-    const { name, planned_brewery_ids } = req.body;
+    const { name, description, planned_brewery_ids } = req.body;
 
     if (!name || typeof name !== 'string' || !name.trim()) {
       return res.status(400).json({
@@ -51,6 +51,7 @@ router.post('/', authMiddleware as any, async (req: AuthenticatedRequest, res: R
       id: randomUUID(),
       user_id,
       name: name.trim(),
+      description: description || null,
       planned_brewery_ids: Array.isArray(planned_brewery_ids) ? planned_brewery_ids : [],
       created_at: new Date().toISOString()
     };
@@ -73,7 +74,7 @@ router.put('/:id', authMiddleware as any, async (req: AuthenticatedRequest, res:
   try {
     const id = req.params.id;
     const user_id = req.user!.id;
-    const { name, planned_brewery_ids } = req.body;
+    const { name, description, planned_brewery_ids } = req.body;
 
     const tripsCol = getTripsCollection();
     const existing = await tripsCol.findOne({ id, user_id });
@@ -87,6 +88,10 @@ router.put('/:id', authMiddleware as any, async (req: AuthenticatedRequest, res:
 
     const updates: any = {};
     const oldName = existing.name;
+
+    if (description !== undefined) {
+      updates.description = description || null;
+    }
 
     if (name !== undefined) {
       if (typeof name !== 'string' || !name.trim()) {

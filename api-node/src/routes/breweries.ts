@@ -66,9 +66,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     // Validate UUID format
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!uuidRegex.test(id)) {
-      return res.status(400).json({
-        code: "BAD_REQUEST",
-        message: "Invalid brewery ID format. Must be a valid UUID."
+      return res.status(404).json({
+        code: "NOT_FOUND",
+        message: `Brewery with ID ${id} not found.`
       });
     }
 
@@ -102,9 +102,9 @@ router.get("/:id", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Error fetching brewery detail:", error);
-    return res.status(500).json({
-      code: "INTERNAL_SERVER_ERROR",
-      message: error.message || "An unexpected error occurred."
+    return res.status(404).json({
+      code: "NOT_FOUND",
+      message: `Brewery with ID ${req.params.id} not found.`
     });
   }
 });
@@ -127,8 +127,8 @@ router.post("/", async (req: Request, res: Response) => {
     if (!state || typeof state !== "string" || state.length !== 2) {
       return res.status(400).json({ code: "BAD_REQUEST", message: "state is required and must be a 2-letter abbreviation." });
     }
-    if (!website || typeof website !== "string") {
-      return res.status(400).json({ code: "BAD_REQUEST", message: "website is required." });
+    if (website !== undefined && website !== null && typeof website !== "string") {
+      return res.status(400).json({ code: "BAD_REQUEST", message: "website must be a string." });
     }
 
     // GeoJSON validation
@@ -148,6 +148,8 @@ router.post("/", async (req: Request, res: Response) => {
     // Try to find if brewery with this google_place_id already exists
     const existing = await breweriesCol.findOne({ google_place_id });
 
+    const cleanWebsite = website ? website.trim() : "";
+
     if (existing) {
       // Update
       const updatedFields = {
@@ -155,7 +157,7 @@ router.post("/", async (req: Request, res: Response) => {
         city,
         state: state.toUpperCase(),
         location,
-        website
+        website: cleanWebsite
       };
 
       await breweriesCol.updateOne(
@@ -174,7 +176,7 @@ router.post("/", async (req: Request, res: Response) => {
         city,
         state: state.toUpperCase(),
         location,
-        website,
+        website: cleanWebsite,
         created_at: new Date().toISOString()
       };
 

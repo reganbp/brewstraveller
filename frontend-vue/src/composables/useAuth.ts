@@ -15,6 +15,46 @@ if (savedUser) {
   }
 }
 
+// Decentralized helper to parse JWT payload without external libraries
+function parseJwt(tokenStr: string) {
+  try {
+    const base64Url = tokenStr.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window
+        .atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Auth Session Persistence & Rehydration Check (Runs on startup/refresh)
+if (token.value) {
+  const payload = parseJwt(token.value);
+  if (payload && payload.exp) {
+    const currentTime = Date.now() / 1000;
+    if (payload.exp < currentTime) {
+      console.warn('Authentication session expired. Clearing local session state.');
+      token.value = null;
+      user.value = null;
+      localStorage.removeItem('bt_token');
+      localStorage.removeItem('bt_user');
+    }
+  } else {
+    // Invalid token, wipe session completely to prevent stuck states
+    console.warn('Invalid token detected. Clearing local session state.');
+    token.value = null;
+    user.value = null;
+    localStorage.removeItem('bt_token');
+    localStorage.removeItem('bt_user');
+  }
+}
+
 export function useAuth() {
   const isLoggedIn = computed(() => !!token.value);
 

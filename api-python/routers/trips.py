@@ -34,6 +34,7 @@ async def create_trip(payload: TripCreate, current_user: dict = Depends(get_curr
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "name": trip_name,
+        "description": payload.description,
         "planned_brewery_ids": payload.planned_brewery_ids,
         "created_at": datetime.utcnow().isoformat() + "Z"
     }
@@ -68,6 +69,7 @@ async def update_trip(id: str, payload: TripCreate, current_user: dict = Depends
 
     updates = {
         "name": new_name,
+        "description": payload.description,
         "planned_brewery_ids": payload.planned_brewery_ids
     }
 

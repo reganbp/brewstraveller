@@ -129,10 +129,13 @@
     </main>
 
     <!-- Check-In Modal overlay form -->
-    <CheckInForm
+    <LogVisitModal
+      v-slot:default
       v-if="showCheckInModal"
       :breweries="breweries"
+      :trips="trips"
       :initial-trip-name="selectedInitialTripName"
+      :initial-brewery-id="selectedInitialBreweryId"
       @close="handleCheckInClose"
       @success="handleCheckInSuccess"
     />
@@ -156,7 +159,7 @@ import Navbar from '@/components/Navbar.vue';
 import StatsOverview from '@/components/StatsOverview.vue';
 import CheckInList from '@/components/CheckInList.vue';
 import BreweryMap from '@/components/BreweryMap.vue';
-import CheckInForm from '@/components/CheckInForm.vue';
+import LogVisitModal from '@/components/LogVisitModal.vue';
 import FilterBar from '@/components/FilterBar.vue';
 import TripPlanner from '@/components/TripPlanner.vue';
 
@@ -190,6 +193,7 @@ const activeFilters = ref({
 });
 
 const selectedInitialTripName = ref<string | null>(null);
+const selectedInitialBreweryId = ref<string | null>(null);
 
 function handleFilterChange(newFilters: typeof activeFilters.value) {
   activeFilters.value = newFilters;
@@ -199,12 +203,14 @@ function handleSelectTrip(tripName: string | null) {
   selectedTripName.value = tripName;
 }
 
-function handlePlanStop(tripName: string) {
+function handlePlanStop(breweryId: string, tripName: string) {
+  selectedInitialBreweryId.value = breweryId;
   selectedInitialTripName.value = tripName;
   showCheckInModal.value = true;
 }
 
 function handleCheckInClose() {
+  selectedInitialBreweryId.value = null;
   selectedInitialTripName.value = null;
   showCheckInModal.value = false;
 }
@@ -258,43 +264,57 @@ async function fetchData() {
   loading.value = true;
   error.value = false;
 
+  // 1. Fetch Breweries (Public Endpoint)
   try {
-    // 1. Fetch Breweries (Public Endpoint)
     const breweriesRes = await api.get('/breweries');
     breweries.value = breweriesRes.data;
+  } catch (err) {
+    console.error('Failed to load breweries:', err);
+    error.value = true;
+  }
 
-    // Fetch private details only if authenticated
-    if (isLoggedIn.value) {
-      // 2. Fetch Check-ins
+  // Fetch private details only if authenticated (isolated try-catches)
+  if (isLoggedIn.value) {
+    // 2. Fetch Check-ins
+    try {
       const checkInsRes = await api.get('/checkins');
       checkIns.value = checkInsRes.data;
+    } catch (err) {
+      console.error('Failed to load check-ins timeline:', err);
+      checkIns.value = [];
+    }
 
-      // 3. Fetch Stats
+    // 3. Fetch Stats
+    try {
       const statsRes = await api.get('/stats');
       stats.value = statsRes.data;
+    } catch (err) {
+      console.error('Failed to load stats dashboard:', err);
+    }
 
-      // 4. Fetch Trips (Decoupled Itineraries)
+    // 4. Fetch Trips (Decoupled Itineraries)
+    try {
       const tripsRes = await api.get('/trips');
       trips.value = tripsRes.data;
-    } else {
-      // Reset authenticated collections
-      checkIns.value = [];
+    } catch (err) {
+      console.error('Failed to load trips itineraries:', err);
       trips.value = [];
-      stats.value = {
-        total_breweries: 0,
-        total_miles: 0,
-        total_tours: 0,
-        states_visited_count: 0,
-        states_visited: [],
-        state_list: []
-      };
     }
-  } catch (err) {
-    console.error('Failed to sync passport data:', err);
-    error.value = true;
-  } finally {
-    loading.value = false;
+  } else {
+    // Reset authenticated collections
+    checkIns.value = [];
+    trips.value = [];
+    stats.value = {
+      total_breweries: 0,
+      total_miles: 0,
+      total_tours: 0,
+      states_visited_count: 0,
+      states_visited: [],
+      state_list: []
+    };
   }
+
+  loading.value = false;
 }
 
 // Watch global backend URL switch and automatically reload data on change!
