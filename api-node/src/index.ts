@@ -10,6 +10,7 @@ import amenitiesRouter from './routes/amenities';
 import healthRouter from './routes/health';
 import authRouter from './routes/auth';
 import tripsRouter from './routes/trips';
+import adminRouter from './routes/admin';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
@@ -42,6 +43,7 @@ app.use('/checkins', checkinsRouter);
 app.use('/trips', tripsRouter);
 app.use('/stats', statsRouter);
 app.use('/amenities', amenitiesRouter);
+app.use('/admin', adminRouter);
 
 async function bootstrap() {
   try {

@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.responses import JSONResponse
+from bson import ObjectId
 from database import get_db
 from models import Brewery, BreweryCreate, BreweryDetailResponse, UserReportedAmenity
 from utils.amenities import get_label_for_slug
@@ -39,16 +40,17 @@ async def get_breweries(
 
 @router.get("/{id}", response_model=BreweryDetailResponse)
 async def get_brewery(id: str):
-    # Validate UUID format
-    uuid_regex = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
-    if not re.match(uuid_regex, id, re.IGNORECASE):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid brewery ID format. Must be a valid UUID."
-        )
-
     db = get_db()
-    brewery = await db.breweries.find_one({"id": id}, {"_id": 0})
+    
+    # Construct flexible fallback query to match UUID, google_place_id, or ObjectId
+    query = {"$or": [{"id": id}, {"google_place_id": id}]}
+    try:
+        if ObjectId.is_valid(id):
+            query["$or"].append({"_id": ObjectId(id)})
+    except Exception:
+        pass
+
+    brewery = await db.breweries.find_one(query, {"_id": 0})
     if not brewery:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -57,7 +59,7 @@ async def get_brewery(id: str):
 
     # Run aggregation on checkins collection to group and count amenities
     pipeline = [
-        {"$match": {"brewery_id": id}},
+        {"$match": {"brewery_id": brewery["id"]}}, # Match on verified brewery UUID
         {"$unwind": "$amenities_observed"},
         {"$group": {"_id": "$amenities_observed", "count": {"$sum": 1}}},
         {"$sort": {"count": -1, "_id": 1}}

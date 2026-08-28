@@ -74,6 +74,7 @@ class UserRegister(BaseModel):
     email: str
     password: str
     full_name: str
+    is_admin: bool = False
 
 class UserLogin(BaseModel):
     email: str
@@ -84,6 +85,7 @@ class User(BaseModel):
     email: str
     full_name: str
     role: str = "user"
+    is_admin: bool = False
     home_city: Optional[str] = None
     home_coordinates: Optional[List[float]] = None
     created_at: str

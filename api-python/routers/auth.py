@@ -30,12 +30,13 @@ async def register(payload: UserRegister):
         "password_hash": hashed,
         "full_name": payload.full_name,
         "role": "user",
+        "is_admin": False,
         "created_at": created_at_iso
     }
 
     await db.users.insert_one(new_user_doc)
 
-    token = create_access_token(user_id=user_id, email=email_lower, role="user")
+    token = create_access_token(user_id=user_id, email=email_lower, role="user", is_admin=False)
 
     return AuthResponse(
         access_token=token,
@@ -45,6 +46,7 @@ async def register(payload: UserRegister):
             email=email_lower,
             full_name=payload.full_name,
             role="user",
+            is_admin=False,
             created_at=created_at_iso
         )
     )
@@ -61,10 +63,12 @@ async def login(payload: UserLogin):
             detail="Invalid email or password."
         )
 
+    is_admin_flag = user_doc.get("is_admin", False) or user_doc.get("role") == "admin"
     token = create_access_token(
         user_id=user_doc["id"],
         email=user_doc["email"],
-        role=user_doc["role"]
+        role=user_doc["role"],
+        is_admin=is_admin_flag
     )
 
     return AuthResponse(
@@ -75,6 +79,9 @@ async def login(payload: UserLogin):
             email=user_doc["email"],
             full_name=user_doc["full_name"],
             role=user_doc["role"],
+            is_admin=is_admin_flag,
+            home_city=user_doc.get("home_city"),
+            home_coordinates=user_doc.get("home_coordinates"),
             created_at=user_doc["created_at"]
         )
     )

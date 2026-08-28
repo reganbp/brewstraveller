@@ -20,12 +20,13 @@ def verify_password(password: str, hashed: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(user_id: str, email: str, role: str) -> str:
+def create_access_token(user_id: str, email: str, role: str, is_admin: bool = False) -> str:
     expire = datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
     payload = {
         "id": user_id,
         "email": email,
         "role": role,
+        "is_admin": is_admin,
         "exp": expire
     }
     encoded_jwt = jwt.encode(payload, JWT_SECRET, algorithm=ALGORITHM)

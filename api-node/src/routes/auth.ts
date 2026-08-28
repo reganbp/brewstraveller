@@ -34,12 +34,14 @@ router.post('/register', async (req: Request, res: Response) => {
     }
 
     const password_hash = await bcrypt.hash(password, 10);
+
     const newUser = {
       id: randomUUID(),
       email: email.toLowerCase(),
       password_hash,
       full_name,
       role: 'user' as 'user' | 'admin',
+      is_admin: false,
       created_at: new Date().toISOString()
     };
 
@@ -47,7 +49,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
     // Generate JWT access token
     const token = jwt.sign(
-      { id: newUser.id, email: newUser.email, role: newUser.role },
+      { id: newUser.id, email: newUser.email, role: newUser.role, is_admin: false },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -60,6 +62,7 @@ router.post('/register', async (req: Request, res: Response) => {
         email: newUser.email,
         full_name: newUser.full_name,
         role: newUser.role,
+        is_admin: false,
         created_at: newUser.created_at
       }
     });
@@ -96,7 +99,7 @@ router.post('/login', async (req: Request, res: Response) => {
 
     // Generate JWT access token
     const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+      { id: user.id, email: user.email, role: user.role, is_admin: user.is_admin || user.role === 'admin' },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
@@ -109,6 +112,7 @@ router.post('/login', async (req: Request, res: Response) => {
         email: user.email,
         full_name: user.full_name,
         role: user.role,
+        is_admin: user.is_admin || user.role === 'admin',
         home_city: user.home_city || null,
         home_coordinates: user.home_coordinates || null,
         created_at: user.created_at
@@ -182,6 +186,7 @@ router.put('/profile', authMiddleware as any, async (req: AuthenticatedRequest, 
       email: updatedUser.email,
       full_name: updatedUser.full_name,
       role: updatedUser.role,
+      is_admin: updatedUser.is_admin || updatedUser.role === 'admin',
       home_city: updatedUser.home_city || null,
       home_coordinates: updatedUser.home_coordinates || null,
       created_at: updatedUser.created_at

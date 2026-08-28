@@ -54,8 +54,21 @@
           </button>
         </div>
 
-        <!-- User Authentication Control -->
+        <!-- User Authentication & Role-Based Controls -->
         <div class="flex items-center gap-2">
+          <!-- Desktop Admin Dropdown Selector (shows if user is registered admin) -->
+          <select
+            v-if="isLoggedIn && (user?.is_admin || user?.role === 'admin')"
+            @change="handleAdminSelect"
+            class="bg-slate-100 dark:bg-slate-900 text-amber-500 border border-slate-200 dark:border-slate-800 rounded-xl text-xs h-11 px-3 py-1 font-bold cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-800/80 transition-all focus:outline-none"
+          >
+            <option value="">⚙️ Admin Data...</option>
+            <option value="users">Users</option>
+            <option value="breweries">Breweries</option>
+            <option value="checkins">Check-ins</option>
+            <option value="trips">Trips</option>
+          </select>
+
           <!-- Logged In chip with UserProfileModal trigger -->
           <div v-if="isLoggedIn && user" class="flex items-center gap-2 h-11">
             <button
@@ -188,6 +201,23 @@
           </button>
         </div>
 
+        <!-- Mobile Admin Controls -->
+        <div v-if="isLoggedIn && (user?.is_admin || user?.role === 'admin')" class="space-y-1.5 border-t border-slate-100 dark:border-slate-900 pt-5">
+          <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            System Administration
+          </span>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="col in ['users', 'breweries', 'checkins', 'trips']"
+              :key="col"
+              @click="openAdminFromMobile(col)"
+              class="h-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 text-xs font-bold text-slate-700 dark:text-slate-300 capitalize text-center cursor-pointer"
+            >
+              {{ col }}
+            </button>
+          </div>
+        </div>
+
         <!-- Mobile User Auth Control -->
         <div class="space-y-1.5 border-t border-slate-100 dark:border-slate-900 pt-5">
           <span class="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
@@ -241,6 +271,15 @@
       @close="showProfileModal = false"
       @success="handleProfileSuccess"
     />
+
+    <!-- Toggleable Admin Data Management Modal overlay -->
+    <AdminManagementModal
+      v-if="showAdminModal && selectedCollection"
+      :is-open="showAdminModal"
+      :collection="selectedCollection"
+      @close="closeAdminModal"
+      @success="handleAdminSuccess"
+    />
   </header>
 </template>
 
@@ -252,6 +291,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';
 import AuthModal from './AuthModal.vue';
 import UserProfileModal from './UserProfileModal.vue';
+import AdminManagementModal from './AdminManagementModal.vue';
 
 // Emits
 const emit = defineEmits<{
@@ -260,6 +300,8 @@ const emit = defineEmits<{
 
 const showAuthModal = ref(false);
 const showProfileModal = ref(false);
+const showAdminModal = ref(false);
+const selectedCollection = ref('');
 const isMobileMenuOpen = ref(false);
 
 const { isLoggedIn, user, logout } = useAuth();
@@ -272,6 +314,30 @@ function handleMobileProfile() {
 
 function handleProfileSuccess() {
   emit('auth-success');
+}
+
+function handleAdminSelect(event: Event) {
+  const target = event.target as HTMLSelectElement;
+  if (target.value) {
+    selectedCollection.value = target.value;
+    showAdminModal.value = true;
+    target.value = ''; // Reset select tag
+  }
+}
+
+function openAdminFromMobile(col: string) {
+  selectedCollection.value = col;
+  showAdminModal.value = true;
+  isMobileMenuOpen.value = false;
+}
+
+function closeAdminModal() {
+  showAdminModal.value = false;
+  selectedCollection.value = '';
+}
+
+function handleAdminSuccess() {
+  emit('auth-success'); // Re-loads statistical panels
 }
 
 // Compute colors based on response latency

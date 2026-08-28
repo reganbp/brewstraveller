@@ -9,6 +9,7 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/brewstrave
 const brewId1 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7f1');
 const brewId2 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7f2');
 const brewId3 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7f3');
+const brewId4 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7f4');
 
 const checkId1 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7a1');
 const checkId2 = new ObjectId('65d0a1b2e1f2a3b4c5d6e7a2');
@@ -47,6 +48,17 @@ const sampleBreweries = [
     location: { type: 'Point', coordinates: [-70.288, 43.651] },
     website: 'https://bissellbrothers.com',
     created_at: '2026-02-10T00:00:00Z'
+  },
+  {
+    _id: brewId4,
+    id: brewId4.toString(),
+    google_place_id: 'ChIJs7XpY3Z644kRPlB03fS-I1Y',
+    name: 'Samuel Adams Boston Brewery',
+    city: 'Boston',
+    state: 'MA',
+    location: { type: 'Point', coordinates: [-71.1015, 42.3144] },
+    website: 'https://samadamsbostonbrewery.com',
+    created_at: '2026-02-15T00:00:00Z'
   }
 ];
 

@@ -160,6 +160,7 @@ const emit = defineEmits<{
 // Mode State: login, register, reset
 const mode = ref<'login' | 'register' | 'reset'>('login');
 const loading = ref(false);
+const registerIsAdmin = ref(false);
 const errorMsg = ref<string | null>(null);
 const successMsg = ref<string | null>(null);
 
@@ -177,6 +178,7 @@ function clearInputs() {
   fullName.value = '';
   password.value = '';
   confirmPassword.value = '';
+  registerIsAdmin.value = false;
   errorMsg.value = null;
   successMsg.value = null;
 }
@@ -227,7 +229,7 @@ async function handleSubmit() {
 
   try {
     if (mode.value === 'register') {
-      await register(email.value.trim(), password.value, fullName.value.trim());
+      await register(email.value.trim(), password.value, fullName.value.trim(), registerIsAdmin.value);
       clearInputs();
       emit('success');
     } else if (mode.value === 'login') {

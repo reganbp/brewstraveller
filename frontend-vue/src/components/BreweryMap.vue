@@ -175,9 +175,11 @@ async function selectBrewery(brewery: Brewery) {
     const res = await api.get(`/breweries/${brewery.id}`);
     detailedBrewery.value = res.data;
   } catch (err) {
-    console.warn(`Failed to retrieve details for brewery ID: ${brewery.id}. Resetting selection state.`, err);
-    selectedBrewery.value = null;
-    detailedBrewery.value = null;
+    console.warn(`Failed to retrieve details for brewery ID: ${brewery.id}. Retaining select state and falling back to empty amenities.`, err);
+    detailedBrewery.value = {
+      ...brewery,
+      amenities: []
+    } as any;
   } finally {
     loadingAmenities.value = false;
   }

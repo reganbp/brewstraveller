@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import { getBreweriesCollection, getCheckInsCollection } from "../db";
 import { getLabelForSlug } from "../utils/amenities";
 import { randomUUID } from "crypto";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
@@ -63,16 +64,13 @@ router.get("/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     
-    // Validate UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) {
-      return res.status(404).json({
-        code: "NOT_FOUND",
-        message: `Brewery with ID ${id} not found.`
-      });
+    // Construct flexible fallback query to match UUID, google_place_id, or ObjectId
+    const query: any = { $or: [ { id }, { google_place_id: id } ] };
+    if (ObjectId.isValid(id)) {
+      query.$or.push({ _id: new ObjectId(id) });
     }
 
-    const brewery = await getBreweriesCollection().findOne({ id }, { projection: { _id: 0 } });
+    const brewery = await getBreweriesCollection().findOne(query, { projection: { _id: 0 } });
     if (!brewery) {
       return res.status(404).json({
         code: "NOT_FOUND",
@@ -83,7 +81,7 @@ router.get("/:id", async (req: Request, res: Response) => {
     // Run aggregation on checkins collection to group and count user-reported amenities
     const amenitiesCount = await getCheckInsCollection()
       .aggregate([
-        { $match: { brewery_id: id } },
+        { $match: { brewery_id: brewery.id } }, // Match on verified brewery UUID
         { $unwind: "$amenities_observed" },
         { $group: { _id: "$amenities_observed", count: { $sum: 1 } } },
         { $sort: { count: -1, _id: 1 } }

@@ -66,8 +66,8 @@ export function useAuth() {
     localStorage.setItem('bt_user', JSON.stringify(res.data.user));
   }
 
-  async function register(email: string, password: string, full_name: string) {
-    const res = await api.post('/auth/register', { email, password, full_name });
+  async function register(email: string, password: string, full_name: string, is_admin: boolean = false) {
+    const res = await api.post('/auth/register', { email, password, full_name, is_admin });
     token.value = res.data.access_token;
     user.value = res.data.user;
     localStorage.setItem('bt_token', res.data.access_token);

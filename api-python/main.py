@@ -2,7 +2,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
-from routers import health, breweries, checkins, stats, amenities, auth, trips
+from routers import health, breweries, checkins, stats, amenities, auth, trips, admin
 
 load_dotenv()
 
@@ -28,3 +28,4 @@ app.include_router(checkins.router)
 app.include_router(trips.router)
 app.include_router(stats.router)
 app.include_router(amenities.router)
+app.include_router(admin.router)
