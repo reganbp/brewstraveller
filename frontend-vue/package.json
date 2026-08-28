@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "prebuild": "node scripts/generate-pwa-icons.js",
+        "prebuild": "node scripts/create-pwa-icons.mjs",
         "build": "vite build",
         "preview": "vite preview"
     },

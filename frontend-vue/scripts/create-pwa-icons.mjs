@@ -19,4 +19,4 @@ const pwa512Buffer = Buffer.from(pwa512Base64, 'base64');
 fs.writeFileSync(path.join(publicDir, 'pwa-192x192.png'), pwa192Buffer);
 fs.writeFileSync(path.join(publicDir, 'pwa-512x512.png'), pwa512Buffer);
 
-console.log('✅ PWA 192x192 and 512x512 compliant PNG icon assets successfully written into /public!');
+console.log('✅ Standalone PWA 192x192 and 512x512 compliant PNG icon assets written to /public!');
