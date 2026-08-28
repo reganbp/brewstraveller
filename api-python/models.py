@@ -84,7 +84,13 @@ class User(BaseModel):
     email: str
     full_name: str
     role: str = "user"
+    home_city: Optional[str] = None
+    home_coordinates: Optional[List[float]] = None
     created_at: str
+
+class UserProfileUpdate(BaseModel):
+    username: Optional[str] = None
+    home_city: Optional[str] = None
 
 class AuthResponse(BaseModel):
     access_token: str
@@ -103,3 +109,7 @@ class TripCreate(BaseModel):
     name: str
     description: Optional[str] = None
     planned_brewery_ids: List[str] = []
+
+class UserPasswordReset(BaseModel):
+    username: str
+    new_password: str

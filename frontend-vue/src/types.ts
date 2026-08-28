@@ -55,6 +55,8 @@ export interface User {
   email: string;
   full_name: string;
   role: 'user' | 'admin';
+  home_city?: string;
+  home_coordinates?: [number, number];
   created_at: string;
 }
 

@@ -1,5 +1,5 @@
 import { Router, Response } from "express";
-import { getCheckInsCollection, getBreweriesCollection } from "../db";
+import { getCheckInsCollection, getBreweriesCollection, getUsersCollection } from "../db";
 import { randomUUID } from "crypto";
 import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
 
@@ -22,12 +22,13 @@ function haversineDistance(coords1: [number, number], coords2: [number, number])
   return R * c;
 }
 
-// Sequential distance calculator within a trip
+// Sequential distance calculator within a trip (uses home_coordinates for first stop if present)
 export async function recalculateTripDistances(userId: string, tripName: string | null): Promise<void> {
   if (!tripName || !tripName.trim()) return;
 
   const checkinsCol = getCheckInsCollection();
   const breweriesCol = getBreweriesCollection();
+  const usersCol = getUsersCollection();
 
   // Fetch and sort chronologically (visited_at ascending)
   const checkins = await checkinsCol
@@ -47,6 +48,10 @@ export async function recalculateTripDistances(userId: string, tripName: string 
     }
   });
 
+  // Resolve user home coordinates for the first stop fallback
+  const user = await usersCol.findOne({ id: userId });
+  const homeCoords = user?.home_coordinates;
+
   // Calculate distances
   for (let i = 0; i < checkins.length; i++) {
     const current = checkins[i];
@@ -59,6 +64,12 @@ export async function recalculateTripDistances(userId: string, tripName: string 
 
       if (coords1 && coords2) {
         distance = haversineDistance(coords1, coords2);
+      }
+    } else if (homeCoords) {
+      // First stop: calculate distance from user's home location coordinates!
+      const currentCoords = breweriesMap.get(current.brewery_id);
+      if (currentCoords) {
+        distance = haversineDistance(homeCoords as [number, number], currentCoords);
       }
     }
 
@@ -174,6 +185,14 @@ router.post("/", authMiddleware as any, async (req: AuthenticatedRequest, res: R
 
     const cleanTripName = trip_name ? trip_name.trim() : null;
 
+    let initialDistance = 0;
+    if (!cleanTripName) {
+      const user = await getUsersCollection().findOne({ id: user_id });
+      if (user && user.home_coordinates && brewery && brewery.location && brewery.location.coordinates) {
+        initialDistance = haversineDistance(user.home_coordinates as [number, number], brewery.location.coordinates as [number, number]);
+      }
+    }
+
     const newCheckIn = {
       id: randomUUID(),
       user_id,
@@ -182,7 +201,7 @@ router.post("/", authMiddleware as any, async (req: AuthenticatedRequest, res: R
       rating,
       took_tour,
       notes,
-      distance_miles,
+      distance_miles: parseFloat(initialDistance.toFixed(2)),
       transportation_mode,
       trip_name: cleanTripName,
       amenities_observed

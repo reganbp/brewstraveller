@@ -56,12 +56,20 @@
 
         <!-- User Authentication Control -->
         <div class="flex items-center gap-2">
-          <!-- Logged In chip -->
+          <!-- Logged In chip with UserProfileModal trigger -->
           <div v-if="isLoggedIn && user" class="flex items-center gap-2 h-11">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 h-11 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
-              <UserIcon class="h-4 w-4 text-amber-500" />
-              {{ user.full_name }}
-            </span>
+            <button
+              @click="showProfileModal = true"
+              class="hidden md:inline-flex flex-col items-start px-3 py-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-left hover:bg-slate-200 dark:hover:bg-slate-800/80 transition-colors cursor-pointer h-11 justify-center min-w-[120px]"
+            >
+              <span class="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                <UserIcon class="h-3.5 w-3.5 text-amber-500" />
+                {{ user.full_name }}
+              </span>
+              <span v-if="user.home_city" class="text-[9px] text-slate-500 dark:text-slate-400 pl-5 font-bold truncate max-w-[110px]">
+                📍 {{ user.home_city }}
+              </span>
+            </button>
             <button
               @click="logout"
               title="Sign Out"
@@ -186,12 +194,20 @@
             Passport Profile
           </span>
           
-          <!-- Logged In Chip + Sign out -->
+          <!-- Logged In Chip with UserProfileModal trigger -->
           <div v-if="isLoggedIn && user" class="space-y-3">
-            <div class="flex items-center gap-2.5 px-4 h-11 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300">
-              <UserIcon class="h-4.5 w-4.5 text-amber-500" />
-              {{ user.full_name }}
-            </div>
+            <button
+              @click="handleMobileProfile"
+              class="flex flex-col items-start px-4 py-2 w-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-left hover:bg-slate-200 dark:hover:bg-slate-800/80 transition-colors cursor-pointer"
+            >
+              <span class="flex items-center gap-2.5 text-xs font-bold text-slate-700 dark:text-slate-300">
+                <UserIcon class="h-4.5 w-4.5 text-amber-500" />
+                {{ user.full_name }}
+              </span>
+              <span v-if="user.home_city" class="text-[9px] text-slate-500 dark:text-slate-400 pl-7 font-bold">
+                📍 {{ user.home_city }} (Tap to Edit)
+              </span>
+            </button>
             <button
               @click="handleMobileLogout"
               class="flex items-center justify-center gap-1.5 w-full h-11 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/20 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-extrabold border border-rose-150 dark:border-rose-900/40 transition-colors"
@@ -218,6 +234,13 @@
       @close="showAuthModal = false"
       @success="handleAuthSuccess"
     />
+
+    <!-- Toggleable User Profile modal overlay -->
+    <UserProfileModal
+      :is-open="showProfileModal"
+      @close="showProfileModal = false"
+      @success="handleProfileSuccess"
+    />
   </header>
 </template>
 
@@ -228,6 +251,7 @@ import api, { activeBackend, latency, setBackend } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';
 import AuthModal from './AuthModal.vue';
+import UserProfileModal from './UserProfileModal.vue';
 
 // Emits
 const emit = defineEmits<{
@@ -235,10 +259,20 @@ const emit = defineEmits<{
 }>();
 
 const showAuthModal = ref(false);
+const showProfileModal = ref(false);
 const isMobileMenuOpen = ref(false);
 
 const { isLoggedIn, user, logout } = useAuth();
 const { isDark, toggleTheme } = useTheme();
+
+function handleMobileProfile() {
+  isMobileMenuOpen.value = false;
+  showProfileModal.value = true;
+}
+
+function handleProfileSuccess() {
+  emit('auth-success');
+}
 
 // Compute colors based on response latency
 const latencyColor = computed(() => {
