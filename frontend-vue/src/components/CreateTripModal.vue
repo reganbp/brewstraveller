@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Compass, X } from 'lucide-vue-next';
+import { Compass, X } from '@lucide/vue';
 import api from '@/services/api';
 import type { Brewery } from '@/types';
 

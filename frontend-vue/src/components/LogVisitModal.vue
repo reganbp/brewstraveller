@@ -333,7 +333,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue';
-import { CalendarDays, X, Star, Compass } from 'lucide-vue-next';
+import { CalendarDays, X, Star, Compass } from '@lucide/vue';
 import L from 'leaflet';
 import api from '@/services/api';
 import type { Brewery, AmenitySuggestion, Trip } from '@/types';

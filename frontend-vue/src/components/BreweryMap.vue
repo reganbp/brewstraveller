@@ -145,7 +145,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Navigation, MapPin, ExternalLink, Award, Compass } from 'lucide-vue-next';
+import { Navigation, MapPin, ExternalLink, Award, Compass } from '@lucide/vue';
 import api from '@/services/api';
 import type { Brewery, CheckIn } from '@/types';
 import InteractiveMap from './InteractiveMap.vue';

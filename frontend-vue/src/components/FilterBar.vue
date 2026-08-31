@@ -123,7 +123,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
-import { SlidersHorizontal, Search, Star, RotateCcw, ChevronDown } from 'lucide-vue-next';
+import { SlidersHorizontal, Search, Star, RotateCcw, ChevronDown } from '@lucide/vue';
 import type { Brewery } from '@/types';
 
 // Props

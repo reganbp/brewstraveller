@@ -285,7 +285,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { Sliders, X, Search, Inbox, Trash } from 'lucide-vue-next';
+import { Sliders, X, Search, Inbox, Trash } from '@lucide/vue';
 import api from '@/services/api';
 
 // Props

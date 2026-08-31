@@ -170,7 +170,7 @@ import {
   MapPin,
   Award,
   X
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import api from '@/services/api';
 import type { CheckIn, Brewery } from '@/types';
 

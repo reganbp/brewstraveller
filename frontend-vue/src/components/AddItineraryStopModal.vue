@@ -57,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { PlusCircle, X } from 'lucide-vue-next';
+import { PlusCircle, X } from '@lucide/vue';
 import api from '@/services/api';
 import type { Brewery, Trip } from '@/types';
 

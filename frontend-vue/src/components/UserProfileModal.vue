@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { User as UserIcon, X } from 'lucide-vue-next';
+import { User as UserIcon, X } from '@lucide/vue';
 import { useAuth } from '@/composables/useAuth';
 import api from '@/services/api';
 

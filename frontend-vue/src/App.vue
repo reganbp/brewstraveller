@@ -149,7 +149,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
-import { Plus, AlertCircle, RefreshCw, Lock } from 'lucide-vue-next';
+import { Plus, AlertCircle, RefreshCw, Lock } from '@lucide/vue';
 import api, { activeBackend, apiBaseUrl } from '@/services/api';
 import type { Brewery, CheckIn, UserStats, Trip } from '@/types';
 import { useAuth } from '@/composables/useAuth';

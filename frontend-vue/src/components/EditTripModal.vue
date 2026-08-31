@@ -141,7 +141,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { Edit2, X } from 'lucide-vue-next';
+import { Edit2, X } from '@lucide/vue';
 import api from '@/services/api';
 import type { CheckIn, Brewery, Trip } from '@/types';
 

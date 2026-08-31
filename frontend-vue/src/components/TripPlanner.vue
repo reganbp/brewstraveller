@@ -182,7 +182,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { Map, Compass, Navigation, Calendar, ChevronDown, Plus, Settings } from 'lucide-vue-next';
+import { Map, Compass, Navigation, Calendar, ChevronDown, Plus, Settings } from '@lucide/vue';
 import type { CheckIn, Brewery, Trip } from '@/types';
 import CreateTripModal from './CreateTripModal.vue';
 import AddItineraryStopModal from './AddItineraryStopModal.vue';

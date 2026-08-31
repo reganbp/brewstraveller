@@ -285,7 +285,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { Beer, Zap, Sun, Moon, LogIn, LogOut, User as UserIcon, Menu, X } from 'lucide-vue-next';
+import { Beer, Zap, Sun, Moon, LogIn, LogOut, User as UserIcon, Menu, X } from '@lucide/vue';
 import api, { activeBackend, latency, setBackend } from '@/services/api';
 import { useAuth } from '@/composables/useAuth';
 import { useTheme } from '@/composables/useTheme';

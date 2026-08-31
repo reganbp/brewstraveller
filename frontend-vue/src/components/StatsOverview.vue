@@ -85,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { Beer, Compass, Award, MapPin } from 'lucide-vue-next';
+import { Beer, Compass, Award, MapPin } from '@lucide/vue';
 import type { UserStats } from '@/types';
 
 defineProps<{
