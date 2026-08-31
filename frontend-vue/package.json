@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "dev": "vite",
-        "prebuild": "python3 scripts/make_icons.py",
+        "prebuild": "py scripts/make_icons.py",
         "build": "vite build",
         "preview": "vite preview"
     },

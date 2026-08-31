@@ -74,6 +74,7 @@
             
             <input
               v-model="homeCity"
+              @input="detectedCoords = null"
               type="text"
               placeholder="e.g. Charlton, MA or Portland, ME"
               class="w-full h-11 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm focus:border-amber-500 focus:outline-none text-white placeholder-slate-500"
@@ -139,6 +140,7 @@ const { user } = useAuth();
 // Form inputs
 const username = ref('');
 const homeCity = ref('');
+const detectedCoords = ref<[number, number] | null>(null);
 
 watch(user, (newVal) => {
   if (newVal) {
@@ -168,6 +170,7 @@ function detectHomeLocation() {
     async (position) => {
       const lat = position.coords.latitude;
       const lon = position.coords.longitude;
+      detectedCoords.value = [lon, lat];
 
       try {
         // Reverse geocode via Nominatim reverse lookup
@@ -224,7 +227,8 @@ async function handleSubmit() {
     // Call profile update router
     const res = await api.put('/auth/profile', {
       username: usernameContent,
-      home_city: homeCityContent || '' // clear if empty
+      home_city: homeCityContent || '', // clear if empty
+      home_coordinates: detectedCoords.value
     });
 
     // Update shared auth reactive ref + local storage session securely

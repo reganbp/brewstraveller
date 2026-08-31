@@ -93,6 +93,7 @@ class User(BaseModel):
 class UserProfileUpdate(BaseModel):
     username: Optional[str] = None
     home_city: Optional[str] = None
+    home_coordinates: Optional[List[float]] = None
 
 class AuthResponse(BaseModel):
     access_token: str

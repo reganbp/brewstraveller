@@ -129,28 +129,32 @@ async def update_profile(
         else:
             updates["home_city"] = home_city_clean
             
-            # Fetch GPS coordinates from Nominatim
-            try:
-                query_str = urllib.parse.quote(home_city_clean)
-                url = f"https://nominatim.openstreetmap.org/search?q={query_str}&format=json&limit=1"
-                req = urllib.request.Request(url, headers={'User-Agent': 'BrewsTraveller-FastAPI'})
-                
-                # Fetch synchronously since it's an isolated profile set
-                with urllib.request.urlopen(req, timeout=5) as response:
-                    res_data = json.loads(response.read().decode())
-                    if res_data and len(res_data) > 0:
-                        lat = float(res_data[0]["lat"])
-                        lon = float(res_data[0]["lon"])
-                        updates["home_coordinates"] = [lon, lat]
-                    else:
-                        raise HTTPException(
-                            status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Could not geocode home location: {home_city_clean}"
-                        )
-            except HTTPException as http_exc:
-                raise http_exc
-            except Exception as e:
-                print(f"Nominatim geocoding failed: {e}")
+            # Accept home_coordinates if explicitly sent from frontend (prevents extra Nominatim queries)
+            if payload.home_coordinates and isinstance(payload.home_coordinates, list) and len(payload.home_coordinates) == 2:
+                updates["home_coordinates"] = payload.home_coordinates
+            else:
+                # Fetch GPS coordinates from Nominatim
+                try:
+                    query_str = urllib.parse.quote(home_city_clean)
+                    url = f"https://nominatim.openstreetmap.org/search?q={query_str}&format=json&limit=1"
+                    req = urllib.request.Request(url, headers={'User-Agent': 'BrewsTraveller-FastAPI'})
+                    
+                    # Fetch synchronously since it's an isolated profile set
+                    with urllib.request.urlopen(req, timeout=5) as response:
+                        res_data = json.loads(response.read().decode())
+                        if res_data and len(res_data) > 0:
+                            lat = float(res_data[0]["lat"])
+                            lon = float(res_data[0]["lon"])
+                            updates["home_coordinates"] = [lon, lat]
+                        else:
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Could not geocode home location: {home_city_clean}"
+                            )
+                except HTTPException as http_exc:
+                    raise http_exc
+                except Exception as e:
+                    print(f"Nominatim geocoding failed: {e}")
 
     if updates:
         await db.users.update_one({"id": user_id}, {"$set": updates})

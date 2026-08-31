@@ -131,7 +131,7 @@ router.post('/login', async (req: Request, res: Response) => {
 router.put('/profile', authMiddleware as any, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const user_id = req.user!.id;
-    const { username, home_city } = req.body;
+    const { username, home_city, home_coordinates } = req.body;
 
     const updates: any = {};
     if (username !== undefined) {
@@ -152,19 +152,24 @@ router.put('/profile', authMiddleware as any, async (req: AuthenticatedRequest, 
         
         updates.home_city = home_city.trim();
         
-        // Fetch GPS coordinates from Nominatim
-        try {
-          const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(home_city)}&format=json&limit=1`);
-          const geoData = await geoRes.json() as any;
-          if (geoData && geoData.length > 0) {
-            const lat = parseFloat(geoData[0].lat);
-            const lon = parseFloat(geoData[0].lon);
-            updates.home_coordinates = [lon, lat];
-          } else {
-            return res.status(400).json({ code: 'BAD_REQUEST', message: `Could not geocode home location: ${home_city}` });
+        // Accept home_coordinates if explicitly sent from frontend (prevents extra Nominatim queries)
+        if (home_coordinates && Array.isArray(home_coordinates) && home_coordinates.length === 2 && typeof home_coordinates[0] === 'number' && typeof home_coordinates[1] === 'number') {
+          updates.home_coordinates = home_coordinates;
+        } else {
+          // Fetch GPS coordinates from Nominatim
+          try {
+            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(home_city)}&format=json&limit=1`);
+            const geoData = await geoRes.json() as any;
+            if (geoData && geoData.length > 0) {
+              const lat = parseFloat(geoData[0].lat);
+              const lon = parseFloat(geoData[0].lon);
+              updates.home_coordinates = [lon, lat];
+            } else {
+              return res.status(400).json({ code: 'BAD_REQUEST', message: `Could not geocode home location: ${home_city}` });
+            }
+          } catch (geoErr) {
+            console.warn('Nominatim geocoding failed:', geoErr);
           }
-        } catch (geoErr) {
-          console.warn('Nominatim geocoding failed:', geoErr);
         }
       }
     }

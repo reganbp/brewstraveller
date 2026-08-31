@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { getCheckInsCollection, getBreweriesCollection, getUsersCollection } from "../db";
 import { randomUUID } from "crypto";
 import { authMiddleware, AuthenticatedRequest } from "../middleware/auth";
+import { ObjectId } from "mongodb";
 
 const router = Router();
 
@@ -48,8 +49,15 @@ export async function recalculateTripDistances(userId: string, tripName: string 
     }
   });
 
-  // Resolve user home coordinates for the first stop fallback
-  const user = await usersCol.findOne({ id: userId });
+  // Resolve user home coordinates for the first stop fallback with resilient user lookup
+  const userQuery: any = { $or: [{ id: userId }, { _id: userId }] };
+  if (ObjectId.isValid(userId)) {
+    userQuery.$or.push({ _id: new ObjectId(userId) });
+  }
+  const user = await usersCol.findOne(userQuery);
+  if (!user) {
+    console.warn(`[WARN] Could not find user document in database for user_id: ${userId}`);
+  }
   const homeCoords = user?.home_coordinates;
 
   // Calculate distances
@@ -187,9 +195,19 @@ router.post("/", authMiddleware as any, async (req: AuthenticatedRequest, res: R
 
     let initialDistance = 0;
     if (!cleanTripName) {
-      const user = await getUsersCollection().findOne({ id: user_id });
-      if (user && user.home_coordinates && brewery && brewery.location && brewery.location.coordinates) {
-        initialDistance = haversineDistance(user.home_coordinates as [number, number], brewery.location.coordinates as [number, number]);
+      const userQuery: any = { $or: [{ id: user_id }, { _id: user_id }] };
+      if (ObjectId.isValid(user_id)) {
+        userQuery.$or.push({ _id: new ObjectId(user_id) });
+      }
+      const user = await getUsersCollection().findOne(userQuery);
+      if (user) {
+        if (user.home_coordinates && Array.isArray(user.home_coordinates) && user.home_coordinates.length === 2 && brewery && brewery.location && brewery.location.coordinates) {
+          initialDistance = haversineDistance(user.home_coordinates as [number, number], brewery.location.coordinates as [number, number]);
+        } else {
+          console.warn(`[WARN] User ${user.email} missing home_coordinates`);
+        }
+      } else {
+        console.warn(`[WARN] Could not find user document in database for user_id: ${user_id}`);
       }
     }
 
@@ -215,8 +233,16 @@ router.post("/", authMiddleware as any, async (req: AuthenticatedRequest, res: R
       await recalculateTripDistances(user_id, cleanTripName);
     }
 
-    const { _id, ...responseBody } = newCheckIn as any;
-    return res.status(201).json(responseBody);
+    // Query and return the freshly updated check-in document in the HTTP response
+    const freshCheckIn = await checkinsCol.findOne({ id: newCheckIn.id }, { projection: { _id: 0 } });
+    if (!freshCheckIn) {
+      return res.status(500).json({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to retrieve the newly registered check-in."
+      });
+    }
+
+    return res.status(201).json(freshCheckIn);
   } catch (error: any) {
     console.error("Error creating checkin:", error);
     return res.status(500).json({

@@ -3,6 +3,7 @@ import math
 from typing import List, Optional
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Query, status, Depends
+from bson import ObjectId
 from database import get_db
 from models import CheckIn, CheckInCreate
 from routers.auth import get_current_user
@@ -33,7 +34,7 @@ def haversine_distance(coords1: List[float], coords2: List[float]) -> float:
     r = 3958.8  # Radius of earth in miles
     return c * r
 
-# Sequential distance calculator within a trip
+# Sequential distance calculator within a trip (uses home_coordinates for first stop if present)
 async def recalculate_trip_distances(user_id: str, trip_name: Optional[str]):
     if not trip_name or not trip_name.strip():
         return
@@ -54,6 +55,18 @@ async def recalculate_trip_distances(user_id: str, trip_name: Optional[str]):
     breweries = await brew_cursor.to_list(length=None)
     breweries_map = {b["id"]: b["location"]["coordinates"] for b in breweries if b.get("location")}
 
+    # Resolve user home coordinates for the first stop fallback with resilient user lookup
+    user_query = {"$or": [{"id": user_id}, {"_id": user_id}]}
+    try:
+        if ObjectId.is_valid(user_id):
+            user_query["$or"].append({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+    user = await db.users.find_one(user_query)
+    if not user:
+        print(f"[WARN] Could not find user document in database for user_id: {user_id}")
+    home_coords = user.get("home_coordinates") if user else None
+
     # Calculate and update
     for i, current in enumerate(checkins):
         distance = 0.0
@@ -63,6 +76,11 @@ async def recalculate_trip_distances(user_id: str, trip_name: Optional[str]):
             coords2 = breweries_map.get(current["brewery_id"])
             if coords1 and coords2:
                 distance = haversine_distance(coords1, coords2)
+        elif home_coords:
+            # First stop: calculate distance from user's home location coordinates!
+            current_coords = breweries_map.get(current["brewery_id"])
+            if current_coords:
+                distance = haversine_distance(home_coords, current_coords)
 
         rounded_distance = round(distance, 2)
         await db.checkins.update_one(
@@ -121,11 +139,31 @@ async def create_checkin(
 
     clean_trip_name = payload.trip_name.strip() if payload.trip_name else None
 
+    # Resolve home coordinates and calculate distance for single/standalone stops
+    initial_distance = 0.0
+    if not clean_trip_name:
+        user_query = {"$or": [{"id": user_id}, {"_id": user_id}]}
+        try:
+            if ObjectId.is_valid(user_id):
+                user_query["$or"].append({"_id": ObjectId(user_id)})
+        except Exception:
+            pass
+        user = await db.users.find_one(user_query)
+        if user:
+            home_coords = user.get("home_coordinates")
+            if home_coords and isinstance(home_coords, list) and len(home_coords) == 2 and brewery.get("location") and brewery["location"].get("coordinates"):
+                initial_distance = haversine_distance(home_coords, brewery["location"]["coordinates"])
+            else:
+                print(f"[WARN] User {user.get('email')} missing home_coordinates")
+        else:
+            print(f"[WARN] Could not find user document in database for user_id: {user_id}")
+
     new_checkin = payload.dict()
     new_checkin["id"] = str(uuid.uuid4())
     new_checkin["user_id"] = user_id  # set authenticated user
     new_checkin["visited_at"] = formatted_visited_at
     new_checkin["trip_name"] = clean_trip_name
+    new_checkin["distance_miles"] = round(initial_distance, 2)
 
     await db.checkins.insert_one(new_checkin)
 
@@ -133,9 +171,15 @@ async def create_checkin(
     if clean_trip_name:
         await recalculate_trip_distances(user_id, clean_trip_name)
 
-    # Remove MongoDB _id before returning
-    new_checkin.pop("_id", None)
-    return new_checkin
+    # Query and return the freshly updated check-in document in the HTTP response
+    fresh_checkin = await db.checkins.find_one({"id": new_checkin["id"]}, {"_id": 0})
+    if not fresh_checkin:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve the newly registered check-in."
+        )
+
+    return fresh_checkin
 
 @router.put("/{id}", response_model=CheckIn)
 async def update_checkin(
